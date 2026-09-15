@@ -81,6 +81,15 @@ export interface PlanFormData {
   weather: string;
   aiNotes: string;
   level: PlanLevel;
+  outdoorActivityTitle?: string;
+  outdoorGameType?: 'Trò chơi vận động' | 'Trò chơi dân gian';
+  outdoorGameName?: string;
+  outdoorObjectives?: string;
+  afternoonActivity1?: string;
+  afternoonActivity1Objectives?: string;
+  afternoonActivity2?: string;
+  afternoonActivity2Objectives?: string;
+  weeklyDayMode?: boolean;
 }
 
 export interface ActivitySection {

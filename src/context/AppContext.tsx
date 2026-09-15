@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
   classProfile: 'kgm_class_profile',
   savedPlans: 'kgm_saved_plans',
   draftForm: 'kgm_draft_form',
+  weeklyReturn: 'kgm_weekly_return',
 };
 
 function loadFromStorage<T>(key: string, fallback: T): T {
@@ -25,6 +26,8 @@ function saveToStorage<T>(key: string, value: T): void {
   }
 }
 
+export interface WeeklyReturnContext { weekStartDate: string; dayIndex: number; weekId: string; }
+
 interface AppContextValue {
   currentPage: PageKey;
   navigate: (page: PageKey) => void;
@@ -37,6 +40,8 @@ interface AppContextValue {
   saveClassProfile: (profile: ClassProfile) => void;
   draftFormData: Partial<PlanFormData> | null;
   setDraftFormData: (data: Partial<PlanFormData> | null) => void;
+  weeklyReturn: WeeklyReturnContext | null;
+  setWeeklyReturn: (data: WeeklyReturnContext | null) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -53,6 +58,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [draftFormData, setDraftFormData] = useState<Partial<PlanFormData> | null>(() =>
     loadFromStorage<Partial<PlanFormData> | null>(STORAGE_KEYS.draftForm, null),
   );
+  const [weeklyReturn, setWeeklyReturn] = useState<WeeklyReturnContext | null>(() =>
+    loadFromStorage<WeeklyReturnContext | null>(STORAGE_KEYS.weeklyReturn, null),
+  );
 
   // Persist to localStorage whenever state changes
   useEffect(() => {
@@ -67,6 +75,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     saveToStorage(STORAGE_KEYS.draftForm, draftFormData);
   }, [draftFormData]);
 
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.weeklyReturn, weeklyReturn);
+  }, [weeklyReturn]);
+
   const navigate = useCallback((page: PageKey) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -74,7 +86,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const savePlan = useCallback((plan: GeneratedPlan) => {
     setSavedPlans((prev) => {
-      const existing = prev.findIndex((p) => p.id === plan.id);
+      // Kế hoạch ngày được mở từ kế hoạch tuần: mỗi ngày chỉ có một bản hiện hành.
+      // Lưu lại cùng ngày sẽ thay bản cũ thay vì tạo bản rời/nhân đôi.
+      const existing = prev.findIndex((p) => p.id === plan.id || (plan.formData.weeklyDayMode && p.formData.date === plan.formData.date));
       if (existing >= 0) {
         const next = [...prev];
         next[existing] = plan;
@@ -106,6 +120,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         saveClassProfile,
         draftFormData,
         setDraftFormData,
+        weeklyReturn,
+        setWeeklyReturn,
       }}
     >
       {children}

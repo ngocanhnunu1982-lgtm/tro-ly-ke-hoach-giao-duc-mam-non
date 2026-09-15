@@ -46,7 +46,7 @@ const SECTION_COLORS: Record<string, string> = {
 };
 
 export function PlanResultPage() {
-  const { navigate, currentPlan, setCurrentPlan, savePlan } = useApp();
+  const { navigate, currentPlan, setCurrentPlan, savePlan, weeklyReturn } = useApp();
   const [sections, setSections] = useState<ActivitySection[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBuffer, setEditBuffer] = useState<ActivitySection | null>(null);
@@ -101,7 +101,10 @@ export function PlanResultPage() {
     setCurrentPlan(updated);
     savePlan(updated);
     setSavedNotice(true);
-    window.setTimeout(() => setSavedNotice(false), 2200);
+    if (weeklyReturn) {
+      try { const all = JSON.parse(localStorage.getItem('kgm_weekly_done_days') || '{}'); const arr:number[] = all[weeklyReturn.weekStartDate] || []; if (!arr.includes(weeklyReturn.dayIndex)) arr.push(weeklyReturn.dayIndex); all[weeklyReturn.weekStartDate] = arr; localStorage.setItem('kgm_weekly_done_days', JSON.stringify(all)); } catch {}
+      window.setTimeout(() => navigate('weekly-plan'), 650);
+    } else { window.setTimeout(() => setSavedNotice(false), 2200); }
   };
 
   const updateFormBuffer = <K extends keyof PlanFormData>(key: K, value: PlanFormData[K]) => {
@@ -114,7 +117,10 @@ export function PlanResultPage() {
     savePlan(updated);
     setEditingInfo(false);
     setSavedNotice(true);
-    window.setTimeout(() => setSavedNotice(false), 2200);
+    if (weeklyReturn) {
+      try { const all = JSON.parse(localStorage.getItem('kgm_weekly_done_days') || '{}'); const arr:number[] = all[weeklyReturn.weekStartDate] || []; if (!arr.includes(weeklyReturn.dayIndex)) arr.push(weeklyReturn.dayIndex); all[weeklyReturn.weekStartDate] = arr; localStorage.setItem('kgm_weekly_done_days', JSON.stringify(all)); } catch {}
+      window.setTimeout(() => navigate('weekly-plan'), 650);
+    } else { window.setTimeout(() => setSavedNotice(false), 2200); }
   };
 
   const handlePrint = () => { printPlan({ ...currentPlan, formData, sections }); };
@@ -130,9 +136,9 @@ export function PlanResultPage() {
       )}
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button onClick={() => navigate('daily-plan')} className="btn-ghost -ml-2">
+        <button onClick={() => navigate(weeklyReturn ? 'weekly-plan' : 'daily-plan')} className="btn-ghost -ml-2">
           <ArrowLeft className="h-4 w-4" />
-          Soạn kế hoạch mới
+          {weeklyReturn ? 'Quay lại kế hoạch tuần' : 'Soạn kế hoạch mới'}
         </button>
         <div className="flex gap-2">
           <button onClick={() => setEditingInfo((v) => !v)} className="btn-secondary">

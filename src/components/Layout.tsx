@@ -28,10 +28,11 @@ const NAV_ITEMS: { key: PageKey; label: string; icon: typeof Home }[] = [
 ];
 
 export function Layout({ children }: { children: ReactNode }) {
-  const { currentPage, navigate } = useApp();
+  const { currentPage, navigate, setWeeklyReturn } = useApp();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleNav = (key: PageKey) => {
+    if (key === 'daily-plan') setWeeklyReturn(null);
     navigate(key);
     setMobileOpen(false);
   };

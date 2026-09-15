@@ -55,7 +55,7 @@ const DEFAULT_FORM: PlanFormData = {
 };
 
 export function DailyPlanFormPage() {
-  const { navigate, classProfile, setCurrentPlan, draftFormData, setDraftFormData } = useApp();
+  const { navigate, classProfile, setCurrentPlan, draftFormData, setDraftFormData, weeklyReturn, setWeeklyReturn } = useApp();
   const [form, setForm] = useState<PlanFormData>(() => {
     // Initialize once from localStorage draft, then fill gaps from class profile
     let next = { ...DEFAULT_FORM };
@@ -117,15 +117,21 @@ export function DailyPlanFormPage() {
     }, 2000);
   };
 
-  const isFormValid = form.schoolName && form.teacherName && form.className && form.mainTheme && form.subTheme;
+  // Khi mở từ kế hoạch tuần, thông tin ngày/chủ đề/hoạt động đã được truyền từ tuần.
+  // Không khóa nút chỉ vì hồ sơ lớp chưa có trên origin localhost/thiết bị hiện tại.
+  // Khi soạn ngày độc lập từ menu, vẫn yêu cầu đầy đủ thông tin trường/lớp như trước.
+  const isWeeklyDay = Boolean(weeklyReturn || form.weeklyDayMode);
+  const isFormValid = isWeeklyDay
+    ? Boolean(form.mainTheme && form.subTheme && form.plannedActivity)
+    : Boolean(form.schoolName && form.teacherName && form.className && form.mainTheme && form.subTheme);
 
   return (
     <div className="animate-fade-in space-y-6">
       {/* Header */}
       <div>
-        <button onClick={() => navigate('home')} className="btn-ghost mb-3 -ml-2">
+        <button onClick={() => { if (weeklyReturn) navigate('weekly-plan'); else navigate('home'); }} className="btn-ghost mb-3 -ml-2">
           <ArrowLeft className="h-4 w-4" />
-          Trang chủ
+          {weeklyReturn ? 'Quay lại kế hoạch tuần' : 'Trang chủ'}
         </button>
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary-600 text-white shadow-md">
@@ -484,13 +490,13 @@ export function DailyPlanFormPage() {
           ) : (
             <>
               <Sparkles className="h-6 w-6" />
-              SOẠN KẾ HOẠCH CẢ NGÀY
+              {isWeeklyDay ? 'SOẠN CHI TIẾT NGÀY' : 'SOẠN KẾ HOẠCH CẢ NGÀY'}
             </>
           )}
         </button>
         {!isFormValid && !generating && (
           <p className="mt-2 text-center text-xs text-stone-400">
-            Vui lòng điền tên trường, giáo viên, lớp, chủ đề lớn và chủ đề nhánh
+            {isWeeklyDay ? 'Ngày này cần có chủ đề nhánh và hoạt động chủ đích từ kế hoạch tuần' : 'Vui lòng điền tên trường, giáo viên, lớp, chủ đề lớn và chủ đề nhánh'}
           </p>
         )}
       </div>

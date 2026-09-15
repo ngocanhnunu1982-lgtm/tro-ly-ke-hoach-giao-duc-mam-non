@@ -33,9 +33,22 @@ function goalsForDailyMoment(d: PlanFormData, title: string): string | undefined
   return goals.map(g => `${g.code}. ${cleanGoalText(g.code, g.goal)}`).join('\n');
 }
 
+
+function coreForCustomActivity(d: PlanFormData, title: string, objectives: string): string {
+  if (!title.trim() || !objectives.trim()) return 'Chưa có mục tiêu gốc đủ phù hợp – để trống phần phân tích phẩm chất/5 năng lực.';
+  const profile = deriveCoreDevelopment({
+    objectives,
+    plannedActivity: title,
+    developmentDomain: d.developmentDomain || 'Tình cảm – Xã hội',
+    coreContent: title,
+    subTheme: d.subTheme,
+  });
+  return developmentPrompt(profile);
+}
+
 function chosenObjectives(d: PlanFormData): string {
   if (d.objectives.trim()) return d.objectives.trim();
-  const goals = suggestGoals({ ageGroup: d.ageGroup, developmentDomain: d.developmentDomain, plannedActivity: d.plannedActivity, coreContent: d.coreContent, subTheme: d.subTheme, limit: 3 });
+  const goals = suggestGoals({ ageGroup: d.ageGroup, developmentDomain: d.developmentDomain, plannedActivity: d.plannedActivity, coreContent: d.coreContent, subTheme: d.subTheme, limit: 1 });
   if (goals.length) return goals.map(g => g.goal).join('\n');
   return `AI đề xuất – cần giáo viên kiểm tra: Trẻ tham gia tích cực hoạt động về “${d.subTheme || d.mainTheme}”, biết quan sát, trao đổi và vận dụng điều đã trải nghiệm.`;
 }
@@ -166,10 +179,10 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
       notes: `${/mưa/i.test(d.weather) ? 'Nếu mưa: chuyển vào lớp/hành lang, giảm phạm vi di chuyển và kiểm tra nền chống trượt.' : 'Kiểm tra sân, khoảng cách và dụng cụ trước khi tập.'}`, sourceName: d.ageGroup === '5-6 tuổi' ? GOAL_SOURCE : SAMPLE_SOURCE, sourceLabel: d.ageGroup === '5-6 tuổi' ? 'Mục tiêu chương trình thí điểm' : 'Cấu trúc kế hoạch mẫu', grounded: d.ageGroup === '5-6 tuổi'
     },
     'Hoạt động ngoài trời': {
-      objective: `Trẻ chủ động quan sát và trải nghiệm môi trường thực tế; biết trao đổi, hợp tác và thực hiện quy tắc an toàn.`,
-      content: `* Bước 1. Gợi nhiệm vụ ngoài trời: xuất phát từ một điều trẻ vừa nhắc lúc đón trẻ hoặc một hiện tượng thật đang có ở sân; không cần lặp nguyên nội dung “${d.subTheme || d.mainTheme}”.\n* Bước 2. Quan sát – trải nghiệm: trẻ dùng giác quan an toàn, trao đổi cặp/nhóm; cô hỏi “Con nhận ra điều gì?”, “Dấu hiệu nào làm con nghĩ vậy?”, “Con muốn kiểm tra bằng cách nào?”.\n* Bước 3. Trò chơi vận động/có luật: chọn một trò có mức vận động phù hợp, luật ngắn và có cơ hội chờ lượt/hợp tác.\n* Bước 4. Chơi tự chọn: trẻ chọn khu vực, vật liệu và bạn chơi; cô bao quát thay vì điều khiển mọi nhóm.\n* Bước 5. Chia sẻ – thu dọn – vệ sinh: mỗi nhóm nêu một phát hiện hoặc điều bất ngờ; cùng thu học liệu và rửa tay.${detailSuffix(d.level)}`,
+      objective: d.outdoorObjectives?.trim() || '',
+      content: `${d.outdoorActivityTitle ? `ĐỀ TÀI GIÁO VIÊN CHỌN: ${d.outdoorActivityTitle}\nLiên hệ chủ đề nhánh: ${d.subTheme || d.mainTheme}\n` : ''}${d.outdoorGameName ? `${d.outdoorGameType || 'Trò chơi'}: ${d.outdoorGameName}\n` : ''}* Bước 1. Gợi nhiệm vụ ngoài trời theo đề tài giáo viên đã chọn.\n* Bước 2. Quan sát – trải nghiệm: trẻ dùng giác quan an toàn, trao đổi cặp/nhóm và trình bày phát hiện.\n* Bước 3. ${d.outdoorGameType || 'Trò chơi vận động/có luật'}${d.outdoorGameName ? ` “${d.outdoorGameName}”` : ''}: tổ chức luật ngắn, phù hợp độ tuổi, có cơ hội chờ lượt/hợp tác.\n* Bước 4. Chơi tự chọn: trẻ chọn khu vực, vật liệu và bạn chơi; cô bao quát.\n* Bước 5. Chia sẻ – thu dọn – vệ sinh.${detailSuffix(d.level)}${d.outdoorActivityTitle ? `\n\nPHẨM CHẤT – 5 NĂNG LỰC PHÂN TÍCH TỪ MỤC TIÊU GỐC\n${coreForCustomActivity(d, d.outdoorActivityTitle, d.outdoorObjectives || '')}` : ''}`,
       materials: `${d.playgroundCondition || 'Khu vực sân đã khảo sát'}; học liệu mở/vật thật an toàn${d.availableMaterials ? `; ${d.availableMaterials}` : ''}.`,
-      notes: `${/mưa/i.test(d.weather) ? 'Phương án thay thế: tổ chức quan sát tại hành lang/cửa sổ hoặc trải nghiệm vật thật trong lớp; không cố đưa trẻ ra sân.' : 'Bao quát nhóm, xác định ranh giới chơi và nguy cơ trước hoạt động.'}`, sourceName: SAMPLE_SOURCE, sourceLabel: 'Sườn ngoài trời từ kế hoạch mẫu'
+      notes: `${/mưa/i.test(d.weather) ? 'Phương án thay thế: tổ chức quan sát tại hành lang/cửa sổ hoặc trải nghiệm vật thật trong lớp.' : 'Bao quát nhóm, xác định ranh giới chơi và nguy cơ trước hoạt động.'} Đề tài và trò chơi do giáo viên quyết định theo từng ngày.`, sourceName: SAMPLE_SOURCE, sourceLabel: 'Sườn ngoài trời từ kế hoạch mẫu'
     },
     'Hoạt động có chủ đích': {
       objective: objectives,
@@ -191,10 +204,10 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
       notes: 'Không dùng nội dung chủ đề để làm gián đoạn nhu cầu ăn, ngủ, vệ sinh thực tế của trẻ.', sourceName: SAMPLE_SOURCE, sourceLabel: 'Cấu trúc kế hoạch mẫu'
     },
     'Hoạt động chiều': {
-      objective: `Củng cố hoặc mở rộng một nội dung đã trải nghiệm trong ngày; tạo cơ hội cho trẻ thực hành theo nhu cầu.`,
-      content: `- Sau ngủ dậy: vệ sinh, vận động nhẹ và trò chuyện ngắn để trẻ chuyển trạng thái.\n- Chọn MỘT nội dung cần củng cố từ quan sát buổi sáng: trẻ có thể kể lại, phân loại, hoàn thiện sản phẩm, chơi học tập hoặc thực hành kỹ năng; không dạy lại nguyên hoạt động có chủ đích.\n- Phân hóa: nhóm đã vững được thử cách khó/mở hơn; trẻ còn cần hỗ trợ được làm với ít lựa chọn hơn hoặc cùng bạn.\n- Dành thời gian chơi theo ý thích và chuẩn bị chuyển sang nêu gương/trả trẻ.${detailSuffix(d.level)}`,
-      materials: 'Sản phẩm/học liệu còn lại từ hoạt động trong ngày và đồ chơi lớp.',
-      notes: 'Không biến sinh hoạt chiều thành một “tiết học” thứ hai; ưu tiên nhẹ nhàng, củng cố và lựa chọn.', sourceName: SAMPLE_SOURCE, sourceLabel: 'Cấu trúc kế hoạch mẫu'
+      objective: [d.afternoonActivity1Objectives, d.afternoonActivity2Objectives].filter(Boolean).join('\n'),
+      content: `- Sau ngủ dậy: vệ sinh, vận động nhẹ và trò chuyện ngắn để trẻ chuyển trạng thái. Hai hoạt động chiều ưu tiên liên hệ tự nhiên với chủ đề nhánh “${d.subTheme || d.mainTheme}”; hoạt động nề nếp/kỹ năng riêng của lớp không bị gượng ép theo chủ đề.\n${d.afternoonActivity1 ? `\nHOẠT ĐỘNG 1: ${d.afternoonActivity1}\nMục tiêu gốc: ${d.afternoonActivity1Objectives || 'Để trống – chưa tìm thấy mục tiêu gốc đủ phù hợp.'}\nPhẩm chất – 5 năng lực từ mục tiêu gốc:\n${coreForCustomActivity(d, d.afternoonActivity1, d.afternoonActivity1Objectives || '')}` : '- Hoạt động 1: Giáo viên chọn theo nhu cầu của lớp.'}\n${d.afternoonActivity2 ? `\nHOẠT ĐỘNG 2: ${d.afternoonActivity2}\nMục tiêu gốc: ${d.afternoonActivity2Objectives || 'Để trống – chưa tìm thấy mục tiêu gốc đủ phù hợp.'}\nPhẩm chất – 5 năng lực từ mục tiêu gốc:\n${coreForCustomActivity(d, d.afternoonActivity2, d.afternoonActivity2Objectives || '')}` : '- Hoạt động 2: Giáo viên chọn theo nhu cầu của lớp.'}\n\n- Tổ chức nhẹ nhàng, phân hóa theo khả năng; dành thời gian chơi theo ý thích.${detailSuffix(d.level)}`,
+      materials: 'Học liệu phù hợp với hai hoạt động giáo viên đã chọn và đồ dùng sẵn có của lớp.',
+      notes: 'Mỗi lớp tự chọn 2 hoạt động chiều theo nhu cầu thực tế (ví dụ tăng cường tiếng Việt, thao tác vệ sinh...). Mục tiêu gốc và phẩm chất/năng lực đi theo từng hoạt động.', sourceName: SAMPLE_SOURCE, sourceLabel: 'Cấu trúc kế hoạch mẫu'
     },
     'Nêu gương': {
       objective: 'Trẻ biết nhìn lại hành vi tích cực của bản thân và bạn, mạnh dạn chia sẻ điều mình đã cố gắng.',
@@ -210,18 +223,24 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
     },
   };
 
-  const sections: ActivitySection[] = ACTIVITY_SECTION_TITLES.map((title) => {
+  // Khi mở từ Kế hoạch tuần, các hoạt động giống nhau cả tuần đã được soạn một lần ở cấp tuần.
+  // Kế hoạch ngày chỉ giữ 3 nhóm thay đổi theo ngày.
+  const sectionTitles = d.weeklyDayMode
+    ? ACTIVITY_SECTION_TITLES.filter(title => ['Hoạt động ngoài trời','Hoạt động có chủ đích','Hoạt động chiều'].includes(title))
+    : ACTIVITY_SECTION_TITLES;
+  const sections: ActivitySection[] = sectionTitles.map((title) => {
     const tpl = templates[title];
-    const distributedGoals = title === 'Hoạt động có chủ đích' ? undefined : goalsForDailyMoment(d, title);
+    const distributedGoals = (title === 'Hoạt động có chủ đích' || (title === 'Hoạt động ngoài trời' && d.outdoorObjectives?.trim()) || (title === 'Hoạt động chiều' && (d.afternoonActivity1Objectives?.trim() || d.afternoonActivity2Objectives?.trim()))) ? undefined : goalsForDailyMoment(d, title);
     return { id: title, title, icon: ACTIVITY_ICONS[title] || 'Circle', time: ACTIVITY_TIMES[title] || '', duration: ACTIVITY_DURATIONS[title] || '', objective: distributedGoals || tpl.objective, content: tpl.content, materials: tpl.materials, notes: distributedGoals ? `${tpl.notes} Mục tiêu được gợi ý từ ${GOAL_SOURCE}; giáo viên có thể giữ, bỏ hoặc điều chỉnh theo cơ hội giáo dục thực tế.` : tpl.notes, structure: tpl.structure, source: distributedGoals ? source('Mục tiêu chương trình thí điểm', GOAL_SOURCE, true) : source(tpl.sourceLabel, tpl.sourceName, tpl.grounded !== false) };
   });
 
-  const selectedGoals = suggestGoals({ ageGroup: d.ageGroup, developmentDomain: d.developmentDomain, plannedActivity: d.plannedActivity, coreContent: d.coreContent, subTheme: d.subTheme, limit: 3 });
+  const selectedGoals = suggestGoals({ ageGroup: d.ageGroup, developmentDomain: d.developmentDomain, plannedActivity: d.plannedActivity, coreContent: d.coreContent, subTheme: d.subTheme, limit: 1 });
   const warnings: string[] = [];
   if (d.ageGroup !== '5-6 tuổi') warnings.push('Chưa có bộ mục tiêu chuyên môn được tải lên cho độ tuổi này. Mục tiêu AI đề xuất cần giáo viên kiểm tra.');
   if (d.ageGroup === '5-6 tuổi' && !themeMatch && d.date) warnings.push('Ngày đã chọn không nằm trong lịch chủ đề 5–6 tuổi đang được nạp hoặc thuộc thời gian nghỉ/ôn tập.');
   if (!main.grounded) warnings.push('Chưa nhận diện chắc chắn sườn chuyên môn cho hoạt động có chủ đích.');
   warnings.push(wholeDayNote(d));
+  if (d.subTheme) warnings.push(`Mạch ngày phải bám chủ đề nhánh “${d.subTheme}”. Hoạt động do giáo viên tự chọn cần có liên hệ tự nhiên; không gượng ép các hoạt động nề nếp/kỹ năng riêng của lớp.`);
 
   return {
     id: `plan-${Date.now()}`,
@@ -235,7 +254,7 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
 }
 
 export function generateObjectives(formData: Partial<PlanFormData>): string {
-  const goals = suggestGoals({ ageGroup: formData.ageGroup || '3-4 tuổi', developmentDomain: formData.developmentDomain, plannedActivity: formData.plannedActivity, coreContent: formData.coreContent, subTheme: formData.subTheme, limit: 2 });
+  const goals = suggestGoals({ ageGroup: formData.ageGroup || '3-4 tuổi', developmentDomain: formData.developmentDomain, plannedActivity: formData.plannedActivity, coreContent: formData.coreContent, subTheme: formData.subTheme, limit: 1 });
   if (goals.length) return goals.map(g => g.goal).join('\n');
   return `AI đề xuất – cần giáo viên kiểm tra: Chưa có bộ mục tiêu chuyên môn đã nạp cho ${formData.ageGroup || 'độ tuổi này'}.`;
 }

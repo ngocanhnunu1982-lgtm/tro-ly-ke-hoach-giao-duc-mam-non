@@ -1,13 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { ArrowLeft, CalendarRange, Sparkles, AlertTriangle, ArrowRight, Save, Printer, CheckCircle2 } from 'lucide-react';
-import { findThemeByDate, suggestGoals, THEME_SOURCE, GOAL_SOURCE, SAMPLE_SOURCE } from '@/data/knowledgeBase';
+import { ArrowLeft, CalendarRange, Sparkles, AlertTriangle, ArrowRight, Save, Printer, CheckCircle2, Download } from 'lucide-react';
+import { findThemeByDate, suggestGoals, suggestBestGoalForCustomActivity, THEME_SOURCE, GOAL_SOURCE, SAMPLE_SOURCE } from '@/data/knowledgeBase';
+import { exportWeeklyWord } from '@/utils/planExport';
 import type { DayOfWeek } from '@/types';
 
 const dayNames: DayOfWeek[] = ['Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu'];
 const WEEKLY_STORAGE_KEY = 'kgm_weekly_plans';
 
 type WeeklyLessonInput = { domain: string; activityType: string; title: string };
+type DailyCustomInput = { outdoorTitle: string; gameType: 'Trò chơi vận động'|'Trò chơi dân gian'; gameName: string; afternoon1: string; afternoon2: string };
+type CornerKey = 'Xây dựng'|'Phân vai'|'Học tập'|'Thiên nhiên'|'Nghệ thuật';
+type CornerInput = { name: CornerKey; playTitle: string };
+const CORNER_NAMES: CornerKey[] = ['Xây dựng','Phân vai','Học tập','Thiên nhiên','Nghệ thuật'];
+const defaultCorners = (): CornerInput[] => CORNER_NAMES.map(name => ({ name, playTitle: '' }));
+const defaultCustomDays = (): DailyCustomInput[] => dayNames.map((_,i)=>({ outdoorTitle:'', gameType: i % 2 === 0 ? 'Trò chơi vận động' : 'Trò chơi dân gian', gameName:'', afternoon1:'', afternoon2:'' }));
+const WEEKLY_WORKING_KEY = 'kgm_weekly_working';
+const WEEKLY_DONE_KEY = 'kgm_weekly_done_days';
 
 const DOMAIN_ACTIVITY_OPTIONS: Record<string, string[]> = {
   'Nhận thức': ['Khám phá', 'Làm quen với toán'],
@@ -139,10 +148,29 @@ function buildDayPlan(subTheme: string, index: number) {
 }
 
 export function WeeklyPlanPage() {
-  const { navigate, classProfile, setDraftFormData } = useApp();
+  const { navigate, classProfile, setDraftFormData, weeklyReturn, setWeeklyReturn, savedPlans } = useApp();
   const [startDate, setStartDate] = useState('2026-09-07');
   const [generated, setGenerated] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [customDays, setCustomDays] = useState<DailyCustomInput[]>(defaultCustomDays);
+  const [doneDays, setDoneDays] = useState<number[]>([]);
+  const [corners, setCorners] = useState<CornerInput[]>(defaultCorners);
+  const [focusCorners, setFocusCorners] = useState<CornerKey[]>(['Xây dựng','Phân vai','Học tập','Thiên nhiên','Nghệ thuật']);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(WEEKLY_WORKING_KEY);
+      if (raw) {
+        const w = JSON.parse(raw);
+        if (weeklyReturn?.weekStartDate && w.startDate === weeklyReturn.weekStartDate) {
+          setStartDate(w.startDate); setLessonInputs(w.lessonInputs || suggestedLessonInputs(w.startDate)); setAppliedLessonInputs(w.appliedLessonInputs || w.lessonInputs || suggestedLessonInputs(w.startDate)); setCustomDays(w.customDays || defaultCustomDays()); setCorners(w.corners || defaultCorners()); setFocusCorners(w.focusCorners || ['Xây dựng','Phân vai','Học tập','Thiên nhiên','Nghệ thuật']); setGenerated(true);
+        }
+      }
+      const done = JSON.parse(localStorage.getItem(WEEKLY_DONE_KEY) || '{}');
+      const key = weeklyReturn?.weekStartDate || startDate;
+      setDoneDays(done[key] || []);
+    } catch {}
+  }, []);
+
   // lessonInputs chỉ là dữ liệu giáo viên đang nhập. Không dùng nó để tính lại toàn bộ kế hoạch trong lúc gõ.
   const [lessonInputs, setLessonInputs] = useState<WeeklyLessonInput[]>(() => suggestedLessonInputs('2026-09-07'));
   // appliedLessonInputs là ảnh chụp dữ liệu tại thời điểm giáo viên bấm "Soạn kế hoạch tuần".
@@ -159,6 +187,7 @@ export function WeeklyPlanPage() {
     setAppliedLessonInputs(lessonInputs.map(item => ({ ...item, title: item.title.trim() })));
     setGenerated(true);
     setSaved(false);
+    try { localStorage.setItem(WEEKLY_WORKING_KEY, JSON.stringify({ startDate, lessonInputs, appliedLessonInputs: lessonInputs, customDays, corners, focusCorners })); } catch {}
   };
   const ageGroup = classProfile?.ageGroup || '5-6 tuổi';
   const theme = useMemo(() => findThemeByDate(startDate, ageGroup), [startDate, ageGroup]);
@@ -175,16 +204,29 @@ export function WeeklyPlanPage() {
         plannedActivity: focus.activity,
         coreContent: focus.core,
         subTheme: dayTheme.subTheme,
-        limit: 2,
+        limit: 1,
       });
       const momentGoals = Object.fromEntries(['reception','morningExercise','outdoor','corners','care','afternoon','recognition','pickup'].map(key => [key, weeklyMomentGoals(ageGroup, dayTheme.subTheme, key, focus.domain, focus.activity)]));
       return { day, date, theme: dayTheme, focus, goals, momentGoals, dayPlan: buildDayPlan(dayTheme.subTheme, index) };
     });
   }, [startDate, ageGroup, theme, appliedLessonInputs]);
 
+  const customGoals = (title: string, kind: 'outdoor'|'afternoon'|'corner', subTheme?: string) => {
+    const goal = suggestBestGoalForCustomActivity({ ageGroup, title, subTheme: subTheme || theme?.subTheme || '', kind });
+    return goal ? [goal] : [];
+  };
+  const cleanGoals = (goals: any[]) => goals.slice(0,1).map(g => `${g.code}. ${g.goal}`).join('\n');
+  const updateCustomDay = (index:number, patch:Partial<DailyCustomInput>) => {
+    setCustomDays(prev => { const next=prev.map((x,i)=>i===index?{...x,...patch}:x); try { localStorage.setItem(WEEKLY_WORKING_KEY, JSON.stringify({ startDate, lessonInputs, appliedLessonInputs, customDays: next, corners, focusCorners })); } catch {} return next; });
+  };
+
   const openDay = (index: number) => {
     const item = weekDays[index];
     if (!item) return;
+    const custom = customDays[index] || defaultCustomDays()[index];
+    const outdoorGoals = customGoals(custom.outdoorTitle, 'outdoor', item.theme.subTheme);
+    const afternoon1Goals = customGoals(custom.afternoon1, 'afternoon', item.theme.subTheme);
+    const afternoon2Goals = customGoals(custom.afternoon2, 'afternoon', item.theme.subTheme);
     setDraftFormData({
       date: item.date,
       dayOfWeek: item.day,
@@ -194,16 +236,37 @@ export function WeeklyPlanPage() {
       coreContent: item.focus.core,
       developmentDomain: item.focus.domain,
       plannedActivity: item.focus.activity,
-      objectives: item.goals.map(g => `${g.code}. ${g.goal.replace(new RegExp(`^${g.code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.?\\s*`), '')}`).join('\n'),
+      objectives: item.goals.map(g => `${g.code}. ${g.goal}`).join('\n'),
+      outdoorActivityTitle: custom.outdoorTitle,
+      outdoorGameType: custom.gameType,
+      outdoorGameName: custom.gameName,
+      outdoorObjectives: cleanGoals(outdoorGoals),
+      afternoonActivity1: custom.afternoon1,
+      afternoonActivity1Objectives: cleanGoals(afternoon1Goals),
+      afternoonActivity2: custom.afternoon2,
+      afternoonActivity2Objectives: cleanGoals(afternoon2Goals),
+      weeklyDayMode: true,
     });
+    try { localStorage.setItem(WEEKLY_WORKING_KEY, JSON.stringify({ startDate, lessonInputs, appliedLessonInputs, customDays, corners, focusCorners })); } catch {}
+    setWeeklyReturn({ weekStartDate: startDate, dayIndex: index, weekId: `week-${startDate}` });
     navigate('daily-plan');
+  };
+
+  const exportWholeWeek = () => {
+    const dates = weekDays.map(d => d.date);
+    const plans = savedPlans.filter(p => dates.includes(p.formData.date));
+    if (plans.length < 5) {
+      window.alert(`Tuần này mới có ${plans.length}/5 ngày đã lưu chi tiết. Hãy soạn và lưu đủ Thứ Hai–Thứ Sáu trước khi xuất Word cả tuần.`);
+      return;
+    }
+    exportWeeklyWord({ startDate, endDate: addDays(startDate,4), mainTheme: theme?.mainTheme || '', subTheme: theme?.subTheme || '', plans, common: { reception: weekDays[0]?.dayPlan.reception || '', morningExercise: weekDays[0]?.dayPlan.morningExercise || '', care: weekDays[0]?.dayPlan.care || '', corners: corners.map(c => ({ ...c, objective: cleanGoals(customGoals(c.playTitle,'corner',theme?.subTheme || '')) })), focusCorners: dayNames.map((day,i)=>({day,corner:focusCorners[i]})) } });
   };
 
   const saveWeek = () => {
     if (!theme || !weekDays.length) return;
     try {
       const existing = JSON.parse(localStorage.getItem(WEEKLY_STORAGE_KEY) || '[]') as unknown[];
-      const record = { id: `week-${startDate}`, startDate, ageGroup, mainTheme: theme.mainTheme, subTheme: theme.subTheme, days: weekDays, savedAt: new Date().toISOString() };
+      const record = { id: `week-${startDate}`, startDate, ageGroup, mainTheme: theme.mainTheme, subTheme: theme.subTheme, days: weekDays, customDays, corners, focusCorners, savedAt: new Date().toISOString() };
       const next = [record, ...existing.filter((item: any) => item?.id !== record.id)];
       localStorage.setItem(WEEKLY_STORAGE_KEY, JSON.stringify(next));
       setSaved(true);
@@ -250,9 +313,24 @@ export function WeeklyPlanPage() {
           <section className="card p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div><h2 className="font-bold text-stone-800">KẾ HOẠCH GIÁO DỤC TUẦN</h2><p className="mt-1 text-sm text-stone-600">Chủ đề: <strong>{theme.subTheme}</strong> · {shortDate(startDate)} – {shortDate(addDays(startDate,4))}</p><p className="mt-2 text-xs text-stone-500">Cấu trúc tham khảo: {SAMPLE_SOURCE} · Mục tiêu: {GOAL_SOURCE}</p></div>
-              <div className="flex gap-2"><button onClick={saveWeek} className="btn-ghost border border-stone-200"><Save className="h-4 w-4" />{saved ? 'Đã lưu' : 'Lưu tuần'}</button><button onClick={()=>window.print()} className="btn-ghost border border-stone-200"><Printer className="h-4 w-4" />In</button></div>
+              <div className="flex flex-wrap gap-2"><button onClick={saveWeek} className="btn-ghost border border-stone-200"><Save className="h-4 w-4" />{saved ? 'Đã lưu' : 'Lưu tuần'}</button><button onClick={exportWholeWeek} className="btn-ghost border border-stone-200"><Download className="h-4 w-4" />Word cả tuần</button><button onClick={()=>window.print()} className="btn-ghost border border-stone-200"><Printer className="h-4 w-4" />In</button></div>
             </div>
             {saved && <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700"><CheckCircle2 className="h-4 w-4" />Đã lưu kế hoạch tuần trên thiết bị này.</div>}
+          </section>
+
+          <section className="card p-5 space-y-5">
+            <div><h2 className="font-bold text-stone-800">HOẠT ĐỘNG CHUNG CẢ TUẦN</h2><p className="mt-1 text-sm text-stone-500">Các nội dung giống nhau từ Thứ Hai đến Thứ Sáu chỉ soạn một lần, không lặp lại trong kế hoạch từng ngày.</p></div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-stone-200 p-3"><h3 className="font-semibold">Đón trẻ – Trò chuyện</h3><p className="mt-1 text-sm text-stone-600">{weekDays[0]?.dayPlan.reception}</p></div>
+              <div className="rounded-xl border border-stone-200 p-3"><h3 className="font-semibold">Thể dục sáng</h3><p className="mt-1 text-sm text-stone-600">{weekDays[0]?.dayPlan.morningExercise}</p></div>
+              <div className="rounded-xl border border-stone-200 p-3"><h3 className="font-semibold">Vệ sinh – Ăn – Ngủ</h3><p className="mt-1 text-sm text-stone-600">{weekDays[0]?.dayPlan.care}</p></div>
+              <div className="rounded-xl border border-stone-200 p-3"><h3 className="font-semibold">Nêu gương – Trả trẻ</h3><p className="mt-1 text-sm text-stone-600">Thực hiện theo nề nếp chung của lớp trong tuần; điều chỉnh theo tình hình thực tế từng ngày.</p></div>
+            </div>
+            <div className="border-t border-stone-200 pt-4">
+              <h3 className="font-bold text-stone-800">Hoạt động vui chơi trong lớp – soạn chung cả tuần</h3><p className="mt-1 text-sm text-stone-500">Giáo viên nhập tên chơi cho 5 góc. Mỗi góc chỉ gắn tối đa 01 mục tiêu gốc phù hợp nhất; không phù hợp thì để trống.</p>
+              <div className="mt-3 grid gap-3 md:grid-cols-2">{corners.map((corner,idx)=>{const goal=customGoals(corner.playTitle,'corner',theme.subTheme)[0];return <div key={corner.name} className="rounded-xl border border-stone-200 p-3"><label className="label-base">Góc {corner.name}</label><input className="input-base" placeholder={`Nhập tên/nội dung chơi ở góc ${corner.name}`} value={corner.playTitle} onChange={e=>setCorners(prev=>prev.map((c,i)=>i===idx?{...c,playTitle:e.target.value}:c))}/>{goal && <p className="mt-2 text-xs text-emerald-700">Mục tiêu gốc: {goal.code}. {goal.goal}</p>}</div>})}</div>
+              <div className="mt-4"><h4 className="font-semibold text-stone-700">Góc trọng tâm theo ngày</h4><div className="mt-2 grid gap-2 sm:grid-cols-5">{dayNames.map((day,idx)=><div key={day}><label className="text-xs font-semibold text-stone-500">{day}</label><select className="input-base mt-1 !py-2 text-xs" value={focusCorners[idx]} onChange={e=>setFocusCorners(prev=>prev.map((x,i)=>i===idx?e.target.value as CornerKey:x))}>{CORNER_NAMES.map(c=><option key={c}>{c}</option>)}</select></div>)}</div></div>
+            </div>
           </section>
 
           <section className="card overflow-hidden">
@@ -261,8 +339,8 @@ export function WeeklyPlanPage() {
                 <thead><tr className="bg-stone-50"><th className="w-40 border-b border-r border-stone-200 p-3 text-left">Thời điểm</th>{weekDays.map(item=><th key={item.day} className="min-w-48 border-b border-r border-stone-200 p-3 text-left"><span className="font-bold text-secondary-700">{item.day}</span><span className="block text-xs font-normal text-stone-400">{shortDate(item.date)}</span></th>)}</tr></thead>
                 <tbody>
                   {[
-                    ['Đón trẻ – Trò chuyện','reception'],['Thể dục sáng','morningExercise'],['Chơi ngoài trời','outdoor'],['Hoạt động có chủ đích','focus'],['Hoạt động góc','corners'],['Vệ sinh – Ăn – Ngủ','care'],['Hoạt động chiều','afternoon'],['Nêu gương','recognition'],['Trả trẻ','pickup'],
-                  ].map(([label,key])=><tr key={key}><th className="border-b border-r border-stone-200 bg-stone-50/60 p-3 align-top text-left font-semibold text-stone-600">{label}</th>{weekDays.map((item,index)=><td key={`${key}-${item.date}`} className="border-b border-r border-stone-200 p-3 align-top text-stone-700">{key === 'focus' ? <><p className="font-semibold text-stone-800">{item.focus.activity}</p><p className="mt-1 text-xs text-stone-500">{item.focus.core}</p>{item.goals.length > 0 && <p className="mt-2 text-xs text-emerald-700">Mục tiêu: {item.goals.map(g=>g.code).join(', ')}</p>}<button className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-secondary-700" onClick={()=>openDay(index)}>Soạn chi tiết <ArrowRight className="h-3.5 w-3.5" /></button></> : <><p>{item.dayPlan[key as keyof typeof item.dayPlan]}</p>{item.momentGoals[key]?.length > 0 && <p className="mt-2 text-xs text-emerald-700">Mục tiêu: {item.momentGoals[key].map((g:any)=>g.code).join(', ')}</p>}</>}</td>)}</tr>)}
+                    ['Chơi ngoài trời','outdoor'],['Hoạt động có chủ đích','focus'],['Hoạt động chiều','afternoon'],
+                  ].map(([label,key])=><tr key={key}><th className="border-b border-r border-stone-200 bg-stone-50/60 p-3 align-top text-left font-semibold text-stone-600">{label}</th>{weekDays.map((item,index)=><td key={`${key}-${item.date}`} className="border-b border-r border-stone-200 p-3 align-top text-stone-700">{key === 'focus' ? <><p className="font-semibold text-stone-800">{item.focus.activity}</p><p className="mt-1 text-xs text-stone-500">{item.focus.core}</p>{item.goals.length > 0 && <p className="mt-2 text-xs text-emerald-700">Mục tiêu gốc: {item.goals.map(g=>g.code).join(', ')}</p>}<button className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-secondary-700" onClick={()=>openDay(index)}>{doneDays.includes(index) ? '✓ Đã soạn – mở lại' : 'Soạn chi tiết'} <ArrowRight className="h-3.5 w-3.5" /></button></> : key === 'outdoor' ? <div className="space-y-2"><input className="input-base !py-2 text-xs" placeholder="Tên đề tài ngoài trời của ngày" value={customDays[index]?.outdoorTitle || ''} onChange={e=>updateCustomDay(index,{outdoorTitle:e.target.value})}/><select className="input-base !py-2 text-xs" value={customDays[index]?.gameType} onChange={e=>updateCustomDay(index,{gameType:e.target.value as any})}><option>Trò chơi vận động</option><option>Trò chơi dân gian</option></select><input className="input-base !py-2 text-xs" placeholder="Tên trò chơi" value={customDays[index]?.gameName || ''} onChange={e=>updateCustomDay(index,{gameName:e.target.value})}/>{customGoals(customDays[index]?.outdoorTitle || '','outdoor', item.theme.subTheme).length>0 && <p className="text-xs text-emerald-700">Mục tiêu gốc: {customGoals(customDays[index]?.outdoorTitle || '','outdoor', item.theme.subTheme).map(g=>g.code).join(', ')}</p>}<p className="text-[11px] text-stone-500">Khi soạn chi tiết, hệ thống phân tích mục tiêu gốc để gắn phẩm chất và 5 năng lực.</p></div> : key === 'afternoon' ? <div className="space-y-3"><div><input className="input-base !py-2 text-xs" placeholder="Hoạt động 1 (VD: Tăng cường tiếng Việt...)" value={customDays[index]?.afternoon1 || ''} onChange={e=>updateCustomDay(index,{afternoon1:e.target.value})}/>{customGoals(customDays[index]?.afternoon1 || '','afternoon', item.theme.subTheme).length>0 && <p className="mt-1 text-xs text-emerald-700">MT gốc: {customGoals(customDays[index]?.afternoon1 || '','afternoon', item.theme.subTheme).map(g=>g.code).join(', ')}</p>}</div><div><input className="input-base !py-2 text-xs" placeholder="Hoạt động 2 (VD: Bé học thao tác vệ sinh...)" value={customDays[index]?.afternoon2 || ''} onChange={e=>updateCustomDay(index,{afternoon2:e.target.value})}/>{customGoals(customDays[index]?.afternoon2 || '','afternoon', item.theme.subTheme).length>0 && <p className="mt-1 text-xs text-emerald-700">MT gốc: {customGoals(customDays[index]?.afternoon2 || '','afternoon', item.theme.subTheme).map(g=>g.code).join(', ')}</p>}</div><p className="text-[11px] text-stone-500">Mỗi hoạt động chỉ gắn tối đa 01 mục tiêu gốc phù hợp nhất; không đủ phù hợp thì để trống.</p></div> : <><p>{item.dayPlan[key as keyof typeof item.dayPlan]}</p>{item.momentGoals[key]?.length > 0 && <p className="mt-2 text-xs text-emerald-700">Mục tiêu: {item.momentGoals[key].map((g:any)=>g.code).join(', ')}</p>}</>}</td>)}</tr>)}
                 </tbody>
               </table>
             </div>

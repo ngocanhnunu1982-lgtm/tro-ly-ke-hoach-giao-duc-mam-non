@@ -1686,6 +1686,34 @@ export function suggestGoals(params: { ageGroup: AgeGroup; developmentDomain?: s
   return scored.slice(0,limit).map(x=>x.g);
 }
 
+
+
+// Chọn đúng MỘT mục tiêu gốc cho hoạt động giáo viên tự nhập.
+// Khác suggestGoals(), hàm này không cho điểm chỉ vì cùng lĩnh vực: tên hoạt động
+// phải có tín hiệu nội dung thực sự trùng với mục tiêu. Nếu độ phù hợp thấp thì trả undefined.
+export function suggestBestGoalForCustomActivity(params: { ageGroup: AgeGroup; title: string; subTheme?: string; kind: 'outdoor'|'afternoon'|'corner' }): CurriculumGoal | undefined {
+  if (params.ageGroup !== '5-6 tuổi' || !params.title.trim()) return undefined;
+  const stop = new Set(['hoat','dong','cho','tre','be','cua','voi','theo','trong','ngoai','troi','tang','cuong','hoc','lam','quen','thuc','hanh']);
+  const tokens = (v:string) => normalized(v).split(/[^a-z0-9]+/).filter(t => t.length >= 3 && !stop.has(t));
+  const titleTokens = tokens(params.title);
+  if (!titleTokens.length) return undefined;
+  const themeTokens = tokens(params.subTheme || '');
+  let best: { goal: CurriculumGoal; score: number } | undefined;
+  for (const g of CURRICULUM_GOALS) {
+    const hay = normalized(`${g.goal} ${g.content} ${g.activities}`);
+    const titleHits = titleTokens.filter(t => hay.includes(t)).length;
+    const themeHits = themeTokens.filter(t => hay.includes(t)).length;
+    const activityOk = params.kind === 'outdoor'
+      ? /ngoai troi|quan sat|kham pha|van dong|tro choi/.test(normalized(g.activities))
+      : params.kind === 'corner'
+        ? /hoat dong goc|choi|phan vai|xay dung|nghe thuat|hoc tap|thien nhien/.test(normalized(g.activities))
+        : /hoat dong chieu|sinh hoat|hoat dong hoc|hoat dong goc|tro chuyen/.test(normalized(g.activities));
+    const score = titleHits * 3 + Math.min(themeHits, 2) * 0.5 + (activityOk ? 1 : 0);
+    if (titleHits > 0 && (!best || score > best.score)) best = { goal: g, score };
+  }
+  return best && best.score >= 4 ? best.goal : undefined;
+}
+
 export function findFramework(plannedActivity: string): LessonFramework | undefined {
   const value=normalized(plannedActivity);
   if (!value) return undefined;
