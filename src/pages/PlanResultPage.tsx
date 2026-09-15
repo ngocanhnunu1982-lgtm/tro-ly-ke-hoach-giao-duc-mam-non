@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { ActivitySection, PlanFormData } from '@/types';
+import { exportPlanWord, exportPlanPdf, printPlan } from '@/utils/planExport';
 import {
   ArrowLeft,
   ArrowRight,
@@ -116,9 +117,9 @@ export function PlanResultPage() {
     window.setTimeout(() => setSavedNotice(false), 2200);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => { printPlan({ ...currentPlan, formData, sections }); };
+  const handleWord = () => exportPlanWord({ ...currentPlan, formData, sections });
+  const handlePdf = () => exportPlanPdf({ ...currentPlan, formData, sections });
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -138,10 +139,10 @@ export function PlanResultPage() {
             <Edit3 className="h-4 w-4" />
             Sửa thông tin
           </button>
-          <button onClick={handlePrint} className="btn-secondary">
-            <Printer className="h-4 w-4" />
-            In
-          </button>
+          <button onClick={() => navigate('check-plan')} className="btn-secondary"><Check className="h-4 w-4" />Kiểm tra</button>
+          <button onClick={handleWord} className="btn-secondary"><Download className="h-4 w-4" />Word</button>
+          <button onClick={handlePdf} className="btn-secondary"><Download className="h-4 w-4" />PDF</button>
+          <button onClick={handlePrint} className="btn-secondary"><Printer className="h-4 w-4" />In</button>
           <button onClick={handleSavePlan} className="btn-primary">
             <Save className="h-4 w-4" />
             Lưu kế hoạch

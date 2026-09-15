@@ -81,3 +81,9 @@ Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn 
 - Bổ sung “Sửa thông tin” cho ngày, thứ, chủ đề, chủ đề nhánh, lĩnh vực, tên đề tài và mục tiêu đã chọn.
 - Có thông báo xác nhận sau khi lưu và hỏi lại trước khi xóa kế hoạch.
 - Dữ liệu cũ trong localStorage và cấu trúc kế hoạch hiện có được giữ nguyên.
+
+## Cập nhật kiểm tra + xuất hồ sơ
+- Kiểm tra kế hoạch theo 3 mức: Đạt / Nên xem lại / Cần bổ sung; không tự sửa kế hoạch.
+- Rà mục tiêu nguồn, chủ đề tuần, sườn hoạt động, mục tiêu xuyên ngày, phẩm chất–năng lực, độ đầy đủ 9 thời điểm và nguồn truy xuất.
+- Kết quả kế hoạch có nút Word, PDF và In. Word tải tệp .doc có thể mở/chỉnh sửa bằng Microsoft Word.
+- PDF dùng hộp thoại in của trình duyệt: chọn Save as PDF để giữ cùng bố cục với bản in.
