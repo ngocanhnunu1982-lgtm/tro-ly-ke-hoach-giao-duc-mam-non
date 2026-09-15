@@ -67,3 +67,9 @@ Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn 
 - Tên đề tài giáo viên nhập được dùng cùng loại hoạt động, lĩnh vực và chủ đề để gợi ý mục tiêu 388.
 - Khi bấm “Soạn chi tiết”, dữ liệu đề tài + lĩnh vực + mục tiêu được chuyển sang kế hoạch ngày; loại hoạt động được giữ trong tên hoạt động để nhận diện đúng sườn chuyên môn khi tài liệu SƯỜN GA có sườn tương ứng.
 - Không tự nhận là có sườn chuyên môn cho Âm nhạc/Tạo hình nếu tài liệu đã nạp chưa cung cấp sườn đó.
+
+## Vá lỗi nhập tên đề tài kế hoạch tuần
+- Tách dữ liệu giáo viên đang gõ (`lessonInputs`) khỏi dữ liệu dùng để sinh kế hoạch (`appliedLessonInputs`).
+- Khi gõ tên đề tài, App chỉ cập nhật ô nhập; không chạy lại toàn bộ gợi ý mục tiêu 388 cho 5 ngày × các thời điểm trong ngày.
+- Chỉ khi bấm **Soạn kế hoạch tuần** mới chốt dữ liệu đề tài và tính mục tiêu/kế hoạch.
+- Mục đích: tránh giật, reload hoặc văng trang khi nhập tên đề tài, đồng thời giữ quyền chủ động của giáo viên.

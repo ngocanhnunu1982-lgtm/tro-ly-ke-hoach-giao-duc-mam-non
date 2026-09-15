@@ -143,9 +143,23 @@ export function WeeklyPlanPage() {
   const [startDate, setStartDate] = useState('2026-09-07');
   const [generated, setGenerated] = useState(false);
   const [saved, setSaved] = useState(false);
+  // lessonInputs chỉ là dữ liệu giáo viên đang nhập. Không dùng nó để tính lại toàn bộ kế hoạch trong lúc gõ.
   const [lessonInputs, setLessonInputs] = useState<WeeklyLessonInput[]>(() => suggestedLessonInputs('2026-09-07'));
-  useEffect(() => { setLessonInputs(suggestedLessonInputs(startDate)); }, [startDate]);
-  const updateLesson = (index: number, patch: Partial<WeeklyLessonInput>) => setLessonInputs(prev => prev.map((item,i) => i === index ? { ...item, ...patch } : item));
+  // appliedLessonInputs là ảnh chụp dữ liệu tại thời điểm giáo viên bấm "Soạn kế hoạch tuần".
+  // Tách 2 state này giúp ô tên đề tài luôn nhẹ, không gọi suggestGoals hàng chục lần cho mỗi ký tự.
+  const [appliedLessonInputs, setAppliedLessonInputs] = useState<WeeklyLessonInput[]>(() => suggestedLessonInputs('2026-09-07'));
+  useEffect(() => {
+    const next = suggestedLessonInputs(startDate);
+    setLessonInputs(next);
+    setAppliedLessonInputs(next);
+  }, [startDate]);
+  const updateLesson = (index: number, patch: Partial<WeeklyLessonInput>) =>
+    setLessonInputs(prev => prev.map((item,i) => i === index ? { ...item, ...patch } : item));
+  const generateWeek = () => {
+    setAppliedLessonInputs(lessonInputs.map(item => ({ ...item, title: item.title.trim() })));
+    setGenerated(true);
+    setSaved(false);
+  };
   const ageGroup = classProfile?.ageGroup || '5-6 tuổi';
   const theme = useMemo(() => findThemeByDate(startDate, ageGroup), [startDate, ageGroup]);
 
@@ -154,7 +168,7 @@ export function WeeklyPlanPage() {
     return dayNames.map((day, index) => {
       const date = addDays(startDate, index);
       const dayTheme = findThemeByDate(date, ageGroup) || theme;
-      const focus = focusFromTeacherInput(lessonInputs[index] || suggestedLessonInputs(startDate)[index], dayTheme.subTheme);
+      const focus = focusFromTeacherInput(appliedLessonInputs[index] || suggestedLessonInputs(startDate)[index], dayTheme.subTheme);
       const goals = suggestGoals({
         ageGroup,
         developmentDomain: focus.domain,
@@ -166,7 +180,7 @@ export function WeeklyPlanPage() {
       const momentGoals = Object.fromEntries(['reception','morningExercise','outdoor','corners','care','afternoon','recognition','pickup'].map(key => [key, weeklyMomentGoals(ageGroup, dayTheme.subTheme, key, focus.domain, focus.activity)]));
       return { day, date, theme: dayTheme, focus, goals, momentGoals, dayPlan: buildDayPlan(dayTheme.subTheme, index) };
     });
-  }, [startDate, ageGroup, theme, lessonInputs]);
+  }, [startDate, ageGroup, theme, appliedLessonInputs]);
 
   const openDay = (index: number) => {
     const item = weekDays[index];
@@ -225,7 +239,7 @@ export function WeeklyPlanPage() {
               <input className="input-base" value={item.title} onChange={e=>updateLesson(index,{title:e.target.value})} placeholder="Nhập tên đề tài cô sẽ dạy…" />
             </div> })}
           </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-stone-500">Sau khi tạo tuần, hệ thống dùng chính tên đề tài cô nhập để gợi ý mục tiêu 388. Cô tiếp tục duyệt/chỉnh mục tiêu khi mở “Soạn chi tiết”.</p><button className="btn-primary" onClick={()=>setGenerated(true)}><Sparkles className="h-5 w-5" />Soạn kế hoạch tuần</button></div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-stone-500">Sau khi tạo tuần, hệ thống dùng chính tên đề tài cô nhập để gợi ý mục tiêu 388. Cô tiếp tục duyệt/chỉnh mục tiêu khi mở “Soạn chi tiết”.</p><button className="btn-primary" onClick={generateWeek}><Sparkles className="h-5 w-5" />Soạn kế hoạch tuần</button></div>
         </div>
         {ageGroup !== '5-6 tuổi' && <div className="mt-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"><AlertTriangle className="h-4 w-4 shrink-0" />Hiện chỉ có bộ mục tiêu và lịch chủ đề chuyên môn cho 5–6 tuổi. Không tự gắn mục tiêu chính thức cho độ tuổi khác.</div>}
         {theme && <div className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800"><strong>{theme.mainTheme}</strong> → {theme.subTheme}<span className="block text-xs">Nguồn chủ đề: {THEME_SOURCE}</span></div>}
