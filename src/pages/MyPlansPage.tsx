@@ -23,7 +23,7 @@ export function MyPlansPage() {
   };
 
   const handleDelete = (planId: string) => {
-    deletePlan(planId);
+    if (window.confirm('Bạn có chắc muốn xóa kế hoạch này?')) deletePlan(planId);
   };
 
   return (
@@ -97,7 +97,7 @@ export function MyPlansPage() {
                   className="btn-secondary w-full"
                 >
                   <Eye className="h-4 w-4" />
-                  Xem kế hoạch
+                  Mở / chỉnh sửa
                 </button>
               </div>
             );

@@ -73,3 +73,11 @@ Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn 
 - Khi gõ tên đề tài, App chỉ cập nhật ô nhập; không chạy lại toàn bộ gợi ý mục tiêu 388 cho 5 ngày × các thời điểm trong ngày.
 - Chỉ khi bấm **Soạn kế hoạch tuần** mới chốt dữ liệu đề tài và tính mục tiêu/kế hoạch.
 - Mục đích: tránh giật, reload hoặc văng trang khi nhập tên đề tài, đồng thời giữ quyền chủ động của giáo viên.
+
+
+### Cập nhật Lưu – Mở – Sửa kế hoạch
+- Kế hoạch mới chỉ được đưa vào “Kế hoạch của tôi” khi giáo viên chủ động bấm Lưu kế hoạch.
+- Kế hoạch đã lưu mở lại bằng nút “Mở / chỉnh sửa”; chỉnh từng hoạt động và lưu cập nhật trên cùng mã kế hoạch, không tạo bản trùng.
+- Bổ sung “Sửa thông tin” cho ngày, thứ, chủ đề, chủ đề nhánh, lĩnh vực, tên đề tài và mục tiêu đã chọn.
+- Có thông báo xác nhận sau khi lưu và hỏi lại trước khi xóa kế hoạch.
+- Dữ liệu cũ trong localStorage và cấu trúc kế hoạch hiện có được giữ nguyên.

@@ -55,7 +55,7 @@ const DEFAULT_FORM: PlanFormData = {
 };
 
 export function DailyPlanFormPage() {
-  const { navigate, classProfile, setCurrentPlan, savePlan, draftFormData, setDraftFormData } = useApp();
+  const { navigate, classProfile, setCurrentPlan, draftFormData, setDraftFormData } = useApp();
   const [form, setForm] = useState<PlanFormData>(() => {
     // Initialize once from localStorage draft, then fill gaps from class profile
     let next = { ...DEFAULT_FORM };
@@ -110,7 +110,7 @@ export function DailyPlanFormPage() {
     setTimeout(() => {
       const plan = generatePlan(form);
       setCurrentPlan(plan);
-      savePlan(plan);
+      // Chỉ lưu vào 'Kế hoạch của tôi' khi giáo viên bấm Lưu kế hoạch ở trang kết quả.
       setDraftFormData(null);
       setGenerating(false);
       navigate('plan-result');

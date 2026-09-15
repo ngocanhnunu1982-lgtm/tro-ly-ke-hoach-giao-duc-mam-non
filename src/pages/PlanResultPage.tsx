@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import type { ActivitySection } from '@/types';
+import type { ActivitySection, PlanFormData } from '@/types';
 import {
   ArrowLeft,
   ArrowRight,
@@ -49,10 +49,14 @@ export function PlanResultPage() {
   const [sections, setSections] = useState<ActivitySection[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBuffer, setEditBuffer] = useState<ActivitySection | null>(null);
+  const [editingInfo, setEditingInfo] = useState(false);
+  const [formBuffer, setFormBuffer] = useState<PlanFormData | null>(null);
+  const [savedNotice, setSavedNotice] = useState(false);
 
   useEffect(() => {
     if (currentPlan) {
       setSections(currentPlan.sections);
+      setFormBuffer({ ...currentPlan.formData });
     }
   }, [currentPlan]);
 
@@ -68,7 +72,7 @@ export function PlanResultPage() {
     );
   }
 
-  const { formData } = currentPlan;
+  const formData = formBuffer || currentPlan.formData;
 
   const startEdit = (section: ActivitySection) => {
     setEditingId(section.id);
@@ -92,9 +96,24 @@ export function PlanResultPage() {
   };
 
   const handleSavePlan = () => {
-    const updated = { ...currentPlan, sections };
+    const updated = { ...currentPlan, formData, sections };
     setCurrentPlan(updated);
     savePlan(updated);
+    setSavedNotice(true);
+    window.setTimeout(() => setSavedNotice(false), 2200);
+  };
+
+  const updateFormBuffer = <K extends keyof PlanFormData>(key: K, value: PlanFormData[K]) => {
+    setFormBuffer((prev) => ({ ...(prev || currentPlan.formData), [key]: value }));
+  };
+
+  const savePlanInfo = () => {
+    const updated = { ...currentPlan, formData, sections };
+    setCurrentPlan(updated);
+    savePlan(updated);
+    setEditingInfo(false);
+    setSavedNotice(true);
+    window.setTimeout(() => setSavedNotice(false), 2200);
   };
 
   const handlePrint = () => {
@@ -103,6 +122,11 @@ export function PlanResultPage() {
 
   return (
     <div className="animate-fade-in space-y-6">
+      {savedNotice && (
+        <div className="fixed right-4 top-4 z-50 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg">
+          Đã lưu cập nhật kế hoạch
+        </div>
+      )}
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button onClick={() => navigate('daily-plan')} className="btn-ghost -ml-2">
@@ -110,6 +134,10 @@ export function PlanResultPage() {
           Soạn kế hoạch mới
         </button>
         <div className="flex gap-2">
+          <button onClick={() => setEditingInfo((v) => !v)} className="btn-secondary">
+            <Edit3 className="h-4 w-4" />
+            Sửa thông tin
+          </button>
           <button onClick={handlePrint} className="btn-secondary">
             <Printer className="h-4 w-4" />
             In
@@ -143,6 +171,26 @@ export function PlanResultPage() {
           </div>
         </div>
       </section>
+
+      {editingInfo && (
+        <section className="card p-5 lg:p-6">
+          <h2 className="mb-4 text-base font-semibold text-stone-800">Sửa thông tin chung của kế hoạch</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div><label className="label-base">Ngày</label><input className="input-base" type="date" value={formData.date} onChange={(e) => updateFormBuffer('date', e.target.value)} /></div>
+            <div><label className="label-base">Thứ</label><input className="input-base" value={formData.dayOfWeek} onChange={(e) => updateFormBuffer('dayOfWeek', e.target.value as PlanFormData['dayOfWeek'])} /></div>
+            <div><label className="label-base">Chủ đề</label><input className="input-base" value={formData.mainTheme} onChange={(e) => updateFormBuffer('mainTheme', e.target.value)} /></div>
+            <div><label className="label-base">Chủ đề nhánh</label><input className="input-base" value={formData.subTheme} onChange={(e) => updateFormBuffer('subTheme', e.target.value)} /></div>
+            <div><label className="label-base">Lĩnh vực</label><input className="input-base" value={formData.developmentDomain} onChange={(e) => updateFormBuffer('developmentDomain', e.target.value)} /></div>
+            <div><label className="label-base">Tên đề tài hoạt động có chủ đích</label><input className="input-base" value={formData.plannedActivity} onChange={(e) => updateFormBuffer('plannedActivity', e.target.value)} /></div>
+          </div>
+          <div className="mt-4"><label className="label-base">Mục tiêu đã chọn</label><textarea className="input-base min-h-[90px] resize-y" value={formData.objectives} onChange={(e) => updateFormBuffer('objectives', e.target.value)} /></div>
+          <div className="mt-4 flex gap-2">
+            <button onClick={savePlanInfo} className="btn-primary"><Save className="h-4 w-4" />Lưu cập nhật</button>
+            <button onClick={() => { setFormBuffer({ ...currentPlan.formData }); setEditingInfo(false); }} className="btn-secondary">Hủy</button>
+          </div>
+          <p className="mt-3 text-xs text-stone-500">Lưu cập nhật giữ nguyên mã kế hoạch hiện tại, không tạo thêm một bản trùng.</p>
+        </section>
+      )}
 
       {/* Educational chain */}
       <section className="card p-5 lg:p-6">
