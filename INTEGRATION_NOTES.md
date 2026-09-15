@@ -33,3 +33,9 @@ Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn 
 - Phân tầng: Trọng tâm / Phối hợp / Không trọng tâm.
 - Tối đa 2 phẩm chất và 3 năng lực được đưa vào tiến trình; yếu tố thiếu căn cứ không tự gắn.
 - Phần kết quả hiển thị rõ mức độ cạnh từng phẩm chất/năng lực.
+
+### Cập nhật tiến trình giáo án chi tiết
+- Hoạt động có chủ đích được triển khai theo từng bước của sườn chuyên môn đã nhận diện.
+- Mỗi bước có: Hoạt động của cô; Hoạt động của trẻ; Câu hỏi mở; Dự kiến phản hồi; Tình huống/cách hỗ trợ; Minh chứng quan sát.
+- Bài thử “Tìm hiểu về trường mầm non của bé” có tình huống thực tế “bạn mới đến trường”, nhiệm vụ khám phá nhóm nhỏ, thử thách hướng dẫn bạn mới và thay đổi điều kiện để trẻ giải quyết vấn đề/thích ứng.
+- Không thay đổi mã/mục tiêu 388 và không thay đổi logic phân tầng 4 phẩm chất – 5 năng lực.

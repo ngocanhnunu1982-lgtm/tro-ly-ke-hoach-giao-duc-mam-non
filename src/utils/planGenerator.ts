@@ -20,6 +20,71 @@ function source(label: string, name: string, grounded = true) {
   return { documentId: name, documentName: name, label, confidence: grounded ? 'Tài liệu cung cấp' as const : 'AI đề xuất – cần giáo viên kiểm tra' as const };
 }
 
+function q(label: string, teacher: string, child: string, questions: string[], support: string, observe: string): string {
+  return `${label}\n  • Hoạt động của cô: ${teacher}\n  • Hoạt động của trẻ: ${child}\n  • Câu hỏi mở: ${questions.map(x => `“${x}”`).join(' — ')}\n  • Dự kiến phản hồi: Trẻ có thể trả lời bằng lời nói, cử chỉ, hành động hoặc sản phẩm; chấp nhận cách diễn đạt khác nhau nếu phù hợp trải nghiệm.\n  • Tình huống/cách hỗ trợ: ${support}\n  • Minh chứng quan sát: ${observe}`;
+}
+
+function schoolExploreContent(d: PlanFormData, steps: string[]): string {
+  const activity = d.plannedActivity || 'Tìm hiểu về trường mầm non của bé';
+  const selected = deriveCoreDevelopment(d);
+  const active = [...selected.qualities, ...selected.competencies].filter(x => x.selected).map(x => `${x.name} (${x.priority})`).join(', ');
+  return [
+    q(steps[0],
+      'Cô đưa tình huống: “Có một bạn mới đến trường nhưng chưa biết lớp học, sân chơi và nơi rửa tay ở đâu. Lớp mình có thể làm gì để giúp bạn?” Cô cho trẻ quan sát một hình/thẻ nhân vật và không đưa đáp án ngay.',
+      'Trẻ nghe tình huống, kể kinh nghiệm khi mới đến trường, nêu nơi mình biết và đề xuất cách giúp bạn mới.',
+      ['Nếu con là bạn mới, con muốn biết nơi nào trước?', 'Làm thế nào để chúng mình tìm đúng nơi?', 'Có cách nào khác không?'],
+      'Nếu trẻ chưa nêu được ý tưởng, cô cho trẻ chọn giữa 2–3 thẻ hình địa điểm hoặc gợi nhớ đường trẻ đi từ cổng vào lớp; không trả lời thay.',
+      'Trẻ nhận ra vấn đề, nêu ít nhất một ý tưởng/cách tìm hiểu; biết chờ lượt và ghi nhận ý kiến khác.'),
+    q(steps[1],
+      `Cô chia nhóm nhỏ, thống nhất ranh giới an toàn và giao nhiệm vụ khám phá cho hoạt động “${activity}”. Mỗi nhóm được tự chọn một khu vực gần lớp để quan sát; cô dùng câu hỏi gợi mở, chỉ hỗ trợ khi cần.`,
+      'Trẻ tự chọn khu vực/nhiệm vụ, quan sát bằng mắt và các giác quan phù hợp, tìm dấu hiệu đặc trưng, trao đổi với bạn và ghi nhớ bằng lời, ký hiệu hoặc hình vẽ đơn giản.',
+      ['Con nhìn thấy gì ở đây?', 'Dấu hiệu nào giúp con biết đây là nơi này?', 'Nơi này dùng để làm gì?', 'Điều gì cần chú ý để an toàn?'],
+      'Nếu hai trẻ chọn khác nhau, cô mời trẻ nói lý do và tự thống nhất. Nếu điều kiện thực tế thay đổi, cô cho trẻ chọn khu vực thay thế tương đương.',
+      'Trẻ chủ động quan sát/thu thập thông tin; tự lựa chọn; điều chỉnh cách làm khi gặp thay đổi.'),
+    q(steps[2],
+      'Cô mời từng nhóm giới thiệu phát hiện, đặt các kết quả cạnh nhau và khuyến khích trẻ hỏi hoặc bổ sung cho bạn. Cô chỉ khái quát sau khi trẻ đã trình bày.',
+      'Trẻ trình bày nơi đã khám phá, mô tả đặc điểm/công dụng, lắng nghe nhóm khác, so sánh điểm giống–khác và bổ sung thông tin.',
+      ['Nhóm con phát hiện điều gì?', 'Vì sao con biết đó là sân chơi/phòng học/nơi rửa tay?', 'Con đồng ý hay có ý kiến khác với bạn?', 'Thông tin nào sẽ giúp bạn mới nhất?'],
+      'Nếu ý kiến khác nhau, cô không phán đúng/sai ngay mà hỏi “Mình có thể kiểm tra lại bằng cách nào?” để trẻ dùng quan sát làm căn cứ.',
+      'Trẻ biết trình bày căn cứ, lắng nghe, tôn trọng ý kiến khác và điều chỉnh nhận định khi có thông tin mới.'),
+    q(steps[3],
+      'Cô giao thử thách: mỗi nhóm chọn cách hướng dẫn bạn mới từ lớp đến một địa điểm bằng lời nói, ký hiệu, sơ đồ đơn giản hoặc đóng vai. Sau lượt đầu, cô thay một điều kiện nhỏ (ví dụ lối quen thuộc tạm không đi được) để trẻ tìm phương án khác.',
+      'Trẻ lựa chọn cách thể hiện, thử hướng dẫn, nhận phản hồi, điều chỉnh đường đi/cách nói/ký hiệu và thử lại.',
+      ['Con chọn cách nào để bạn dễ hiểu nhất?', 'Nếu đường này không đi được thì con làm thế nào?', 'Con muốn thay đổi điều gì sau lần thử đầu?'],
+      'Nếu trẻ phụ thuộc vào cô, cô đưa hai lựa chọn và hỏi trẻ tự quyết định; nếu phương án chưa phù hợp, cho trẻ thử và tự phát hiện trước khi gợi ý.',
+      'Trẻ đề xuất và thử cách giải quyết; tự lực trong lựa chọn/thực hiện; thích ứng khi điều kiện thay đổi.'),
+    q(steps[4],
+      'Cô cùng trẻ nhìn lại nhiệm vụ ban đầu, hỏi trẻ cách nào đã giúp bạn mới hiệu quả và ghi nhận quá trình hơn là chỉ kết quả. Cô đối chiếu mục tiêu đã chọn và lưu một vài biểu hiện tiêu biểu để điều chỉnh hoạt động sau.',
+      'Trẻ tự nói điều mình phát hiện, cách mình đã thử, điều muốn làm khác lần sau; có thể nhận xét tích cực về cách của bạn.',
+      ['Hôm nay con đã giúp bạn mới bằng cách nào?', 'Cách nào của con đã hiệu quả?', 'Nếu làm lại con muốn đổi điều gì?', 'Con học được điều gì từ ý kiến của bạn?'],
+      'Với trẻ ít nói, cô cho trẻ chỉ vào tranh/sơ đồ hoặc làm lại bằng hành động; không ép trẻ trả lời theo một câu mẫu.',
+      `Quan sát mức độ đạt mục tiêu và các yếu tố đang được phát triển: ${active || 'theo mục tiêu đã chọn'}.`)
+  ].join('\n\n');
+}
+
+function genericDetailedContent(d: PlanFormData, fw: NonNullable<ReturnType<typeof findFramework>>): string {
+  const focus = d.coreContent || d.subTheme || d.mainTheme;
+  const activity = d.plannedActivity || focus;
+  const prompts = [
+    ['Con đã biết gì về việc này?', 'Con muốn thử cách nào?'],
+    ['Con nhận ra điều gì?', 'Điều gì xảy ra khi con thử cách khác?'],
+    ['Con làm như thế nào?', 'Con có ý kiến gì khác với bạn?'],
+    ['Con có thể dùng điều vừa biết vào tình huống nào khác?', 'Nếu điều kiện thay đổi con sẽ làm gì?'],
+    ['Con thấy cách nào hiệu quả?', 'Lần sau con muốn thay đổi điều gì?']
+  ];
+  return fw.steps.map((step, i) => q(step,
+    i === 0 ? `Cô tạo một tình huống/nhiệm vụ gần gũi gắn với “${focus}”, dùng vật thật/tranh/học liệu hiện có và khơi kinh nghiệm của trẻ; không nói trước kết quả.` :
+    i === 1 ? `Cô tổ chức để trẻ trực tiếp thực hiện “${activity}” theo cá nhân/cặp/nhóm nhỏ; quan sát và gợi mở thay vì làm mẫu toàn bộ.` :
+    i === 2 ? 'Cô mời trẻ trình bày cách làm/kết quả, đặt các ý kiến cạnh nhau và giúp trẻ kiểm tra bằng trải nghiệm hoặc bằng chứng quan sát.' :
+    i === 3 ? 'Cô thay đổi một chi tiết của nhiệm vụ/học liệu để trẻ lựa chọn, vận dụng và thử phương án khác.' :
+    'Cô cùng trẻ nhìn lại quá trình, đối chiếu mục tiêu, ghi nhận biểu hiện cụ thể và xác định hỗ trợ tiếp theo.',
+    i === 0 ? 'Trẻ nhớ lại trải nghiệm, nêu dự đoán/ý tưởng và lựa chọn cách bắt đầu.' : i === 1 ? 'Trẻ quan sát, thao tác, thử, trao đổi và tự điều chỉnh trong khả năng.' : i === 2 ? 'Trẻ trình bày, lắng nghe, so sánh và bổ sung ý kiến.' : i === 3 ? 'Trẻ vận dụng, lựa chọn cách mới và thử lại khi cần.' : 'Trẻ tự nhận xét điều đã làm, chia sẻ phát hiện và nêu điều muốn thử tiếp.',
+    prompts[Math.min(i,4)],
+    'Nếu trẻ gặp khó khăn, cô giảm độ khó, cho lựa chọn hoặc gợi bằng câu hỏi/học liệu; ưu tiên để trẻ tự làm phần trẻ có thể làm.',
+    'Ghi nhận bằng hành động, lời nói, lựa chọn, sản phẩm và cách trẻ tương tác; không chỉ dựa vào câu trả lời đồng thanh.'
+  )).join('\n\n');
+}
+
 function mainActivityContent(d: PlanFormData): { text: string; structure?: string[]; grounded: boolean } {
   const fw = findFramework(`${d.plannedActivity} ${d.developmentDomain}`);
   const focus = d.coreContent || d.subTheme || d.mainTheme;
@@ -29,13 +94,8 @@ function mainActivityContent(d: PlanFormData): { text: string; structure?: strin
       text: `Sườn chuyên môn tương ứng chưa được nhận diện trong tài liệu đã nạp.\n- Gợi hứng thú bằng tình huống/vật thật gần gũi với “${focus}”.\n- Cho trẻ trực tiếp quan sát, thao tác, trao đổi theo cặp/nhóm nhỏ.\n- Cô đặt câu hỏi mở, không đưa đáp án ngay.\n- Trẻ chia sẻ kết quả và vận dụng vào tình huống mới.\n- Cô quan sát đối chiếu mục tiêu và ghi nhận để điều chỉnh.${detailSuffix(d.level)}`,
     };
   }
-  const body = fw.steps.map((step, i) => {
-    if (i === 0) return `* ${step}: Tạo tình huống có ý nghĩa gắn với “${focus}”; khơi kinh nghiệm đã có và để trẻ nêu dự đoán/ý tưởng.`;
-    if (i === 1) return `* ${step}: Trẻ trực tiếp quan sát, thao tác, thử nghiệm hoặc thực hiện nhiệm vụ “${d.plannedActivity || focus}” theo cá nhân/cặp/nhóm nhỏ; cô quan sát và gợi mở.`;
-    if (i === 2) return `* ${step}: Trẻ trình bày cách làm, so sánh kết quả, lắng nghe bạn; cô kết nối ý kiến và giúp trẻ khái quát điều vừa khám phá.`;
-    if (i === 3) return `* ${step}: Thay đổi học liệu/tình huống để trẻ vận dụng kinh nghiệm, tự lựa chọn cách thực hiện và sáng tạo phương án mới.`;
-    return `* ${step}: Cô quan sát hành động của trẻ đối chiếu mục tiêu; kết hợp trò chuyện, sản phẩm, lời giải thích và tự/nhận xét của bạn để điều chỉnh hoạt động sau.`;
-  }).join('\n');
+  const isSchoolExplore = fw.id === 'explore-math' && /trường mầm non|truong mam non/i.test(d.plannedActivity || '');
+  const body = isSchoolExplore ? schoolExploreContent(d, fw.steps) : genericDetailedContent(d, fw);
   return { text: `${body}${detailSuffix(d.level)}`, structure: fw.steps, grounded: true };
 }
 
