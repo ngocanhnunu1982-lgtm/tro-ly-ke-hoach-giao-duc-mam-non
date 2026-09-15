@@ -85,6 +85,25 @@ function genericDetailedContent(d: PlanFormData, fw: NonNullable<ReturnType<type
   )).join('\n\n');
 }
 
+
+function dayContext(d: PlanFormData) {
+  const theme = d.subTheme || d.mainTheme || 'trải nghiệm trong ngày';
+  const focus = d.coreContent || d.plannedActivity || theme;
+  const rainy = /mưa|giông|bão/i.test(d.weather || '');
+  const hot = /nóng|nắng gắt/i.test(d.weather || '');
+  return { theme, focus, rainy, hot };
+}
+
+function wholeDayNote(d: PlanFormData): string {
+  const c = dayContext(d);
+  const weather = c.rainy
+    ? 'Thời tiết không thuận lợi: ưu tiên phương án trong lớp/hành lang an toàn cho phần ngoài trời.'
+    : c.hot
+      ? 'Thời tiết nóng/nắng: ưu tiên bóng râm, giảm vận động kéo dài và bổ sung nước uống.'
+      : 'Duy trì xen kẽ vận động – tĩnh, trong lớp – ngoài trời theo điều kiện thực tế.';
+  return `Mạch cả ngày: khơi kinh nghiệm về “${c.theme}” → trải nghiệm/vận động → hoạt động trọng tâm “${c.focus}” → chơi vận dụng → sinh hoạt tự phục vụ → củng cố nhẹ nhàng → nhìn lại cuối ngày. Không yêu cầu mọi hoạt động phải lặp cùng một đối tượng. ${weather}`;
+}
+
 function mainActivityContent(d: PlanFormData): { text: string; structure?: string[]; grounded: boolean } {
   const fw = findFramework(`${d.plannedActivity} ${d.developmentDomain}`);
   const focus = d.coreContent || d.subTheme || d.mainTheme;
@@ -112,19 +131,19 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
   const templates: Record<string, Pick<ActivitySection,'objective'|'content'|'materials'|'notes'> & { structure?: string[]; sourceName: string; sourceLabel: string; grounded?: boolean }> = {
     'Đón trẻ – Chơi – Trò chuyện': {
       objective: `Trẻ vui vẻ đến lớp, thực hiện nề nếp tự phục vụ; mạnh dạn trò chuyện và chia sẻ kinh nghiệm liên quan đến “${d.subTheme || d.mainTheme}”.`,
-      content: `1. Đón trẻ niềm nở; trao đổi ngắn với phụ huynh về tình hình trẻ.\n2. Nhắc trẻ chào hỏi, cất đồ dùng đúng nơi và chủ động chọn hoạt động nhẹ.\n3. Trò chuyện nhóm nhỏ bằng tranh/vật thật: “Con biết gì về ${d.subTheme || d.mainTheme}?”, “Con muốn tìm hiểu điều gì hôm nay?”.\n4. Ghi nhận ý kiến của trẻ để nối sang hoạt động trong ngày.${detailSuffix(d.level)}`,
+      content: `1. Đón trẻ theo trạng thái của từng trẻ; trao đổi ngắn với phụ huynh về sức khỏe/cảm xúc khi cần.\n2. Trẻ tự chào hỏi, cất đồ dùng và chọn sách, xếp hình, vẽ hoặc đồ chơi bàn; cô quan sát để hỗ trợ trẻ khó hòa nhập.\n3. Trò chuyện nhóm nhỏ về “${d.subTheme || d.mainTheme}”: “Con đã gặp/biết điều gì?”, “Hôm nay con muốn khám phá điều gì?”. Cô ghi nhận 2–3 ý tưởng thật của trẻ, không giảng trước nội dung hoạt động học.\n4. Chuyển tiếp: mời trẻ chọn một ý tưởng/câu hỏi sẽ mang theo để kiểm chứng trong hoạt động sau.${detailSuffix(d.level)}`,
       materials: `Khu đón trẻ an toàn, đồ chơi bàn, sách/tranh/vật thật liên quan đến “${d.subTheme || d.mainTheme}”${d.availableMaterials ? `; học liệu hiện có: ${d.availableMaterials}` : ''}.`,
       notes: 'Không ép trẻ trả lời; ưu tiên trò chuyện tự nhiên và quan sát trạng thái cảm xúc đầu ngày.', sourceName: SAMPLE_SOURCE, sourceLabel: 'Cấu trúc kế hoạch mẫu'
     },
     'Thể dục sáng': {
       objective: d.ageGroup === '5-6 tuổi' ? 'TC 1.1. Trẻ chủ động, hào hứng tham gia các hoạt động thể chất hằng ngày.' : 'AI đề xuất – cần giáo viên kiểm tra: Trẻ hào hứng vận động, phối hợp các động tác phù hợp độ tuổi.',
-      content: `- Khởi động: đi/chạy thay đổi kiểu theo hiệu lệnh.\n- Bài tập phát triển chung: hô hấp, tay-vai, bụng-lườn, chân-bật; phối hợp nhịp nhàng.\n- Vận động ngắn gắn không khí chủ đề nhưng không lặp nội dung hoạt động học.\n- Hồi tĩnh: đi nhẹ, hít thở và nhận biết trạng thái cơ thể.${detailSuffix(d.level)}`,
+      content: `- Khởi động: trẻ đi/chạy thay đổi tốc độ, hướng và đội hình theo tín hiệu; cô quan sát khoảng cách an toàn.\n- Bài tập phát triển chung: hô hấp, tay-vai, bụng-lườn, chân-bật; chọn nhịp vừa sức, không biến thành luyện kỹ năng của hoạt động học.\n- Trò chơi vận động ngắn: ưu tiên phản xạ, phối hợp hoặc giữ thăng bằng; có thể dùng hình ảnh của chủ đề để tạo hứng thú nhưng không bắt buộc.\n- Hồi tĩnh: đi nhẹ, hít thở; trẻ tự nhận biết “tim con đang nhanh hay chậm?”, “cơ thể con cần gì sau khi vận động?”.${detailSuffix(d.level)}`,
       materials: `Sân/lớp đủ khoảng trống, nhạc và dụng cụ vận động hiện có.`,
       notes: `${/mưa/i.test(d.weather) ? 'Nếu mưa: chuyển vào lớp/hành lang, giảm phạm vi di chuyển và kiểm tra nền chống trượt.' : 'Kiểm tra sân, khoảng cách và dụng cụ trước khi tập.'}`, sourceName: d.ageGroup === '5-6 tuổi' ? GOAL_SOURCE : SAMPLE_SOURCE, sourceLabel: d.ageGroup === '5-6 tuổi' ? 'Mục tiêu chương trình thí điểm' : 'Cấu trúc kế hoạch mẫu', grounded: d.ageGroup === '5-6 tuổi'
     },
     'Hoạt động ngoài trời': {
       objective: `Trẻ chủ động quan sát và trải nghiệm môi trường thực tế; biết trao đổi, hợp tác và thực hiện quy tắc an toàn.`,
-      content: `* Bước 1. Ổn định – tạo hứng thú: nêu nhiệm vụ quan sát gần gũi với “${d.subTheme || d.mainTheme}”.\n* Bước 2. Quan sát – trải nghiệm: trẻ dùng giác quan, trao đổi cặp/nhóm; cô hỏi “Con nhận ra điều gì?”, “Vì sao con nghĩ vậy?”.\n* Bước 3. Trò chơi vận động/có luật: chọn trò chơi phù hợp sân và mục tiêu, tránh lặp trò đã dùng gần đây.\n* Bước 4. Chơi tự chọn/trò chơi dân gian: trẻ chọn khu vực, học liệu và bạn chơi.\n* Bước 5. Chia sẻ – thu dọn – vệ sinh: trẻ kể một phát hiện, cùng thu học liệu và rửa tay.${detailSuffix(d.level)}`,
+      content: `* Bước 1. Gợi nhiệm vụ ngoài trời: xuất phát từ một điều trẻ vừa nhắc lúc đón trẻ hoặc một hiện tượng thật đang có ở sân; không cần lặp nguyên nội dung “${d.subTheme || d.mainTheme}”.\n* Bước 2. Quan sát – trải nghiệm: trẻ dùng giác quan an toàn, trao đổi cặp/nhóm; cô hỏi “Con nhận ra điều gì?”, “Dấu hiệu nào làm con nghĩ vậy?”, “Con muốn kiểm tra bằng cách nào?”.\n* Bước 3. Trò chơi vận động/có luật: chọn một trò có mức vận động phù hợp, luật ngắn và có cơ hội chờ lượt/hợp tác.\n* Bước 4. Chơi tự chọn: trẻ chọn khu vực, vật liệu và bạn chơi; cô bao quát thay vì điều khiển mọi nhóm.\n* Bước 5. Chia sẻ – thu dọn – vệ sinh: mỗi nhóm nêu một phát hiện hoặc điều bất ngờ; cùng thu học liệu và rửa tay.${detailSuffix(d.level)}`,
       materials: `${d.playgroundCondition || 'Khu vực sân đã khảo sát'}; học liệu mở/vật thật an toàn${d.availableMaterials ? `; ${d.availableMaterials}` : ''}.`,
       notes: `${/mưa/i.test(d.weather) ? 'Phương án thay thế: tổ chức quan sát tại hành lang/cửa sổ hoặc trải nghiệm vật thật trong lớp; không cố đưa trẻ ra sân.' : 'Bao quát nhóm, xác định ranh giới chơi và nguy cơ trước hoạt động.'}`, sourceName: SAMPLE_SOURCE, sourceLabel: 'Sườn ngoài trời từ kế hoạch mẫu'
     },
@@ -137,7 +156,7 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
     },
     'Hoạt động góc': {
       objective: `Trẻ chủ động lựa chọn ý tưởng, vai chơi, bạn chơi; biết thỏa thuận, hợp tác và mở rộng nội dung chơi từ trải nghiệm trong ngày.`,
-      content: `* Bước 1. Gợi hứng thú – Hình thành và lựa chọn ý tưởng chơi: cô giới thiệu môi trường/học liệu mở, trẻ nêu ý tưởng.\n* Bước 2. Thỏa thuận – Lập kế hoạch chơi: trẻ chọn góc, vai, bạn và thống nhất cách chơi.\n* Bước 3. Thực hiện hoạt động chơi: trẻ chủ động chơi; cô quan sát, gợi mở khi cần, không làm thay.\n* Bước 4. Mở rộng và phát triển trò chơi: bổ sung tình huống/học liệu để trẻ thay đổi vai, phối hợp và giải quyết vấn đề.\n* Bước 5. Chia sẻ – Đánh giá – Kết thúc: trẻ chia sẻ quá trình chơi, tự/nhận xét bạn và cùng thu dọn.${detailSuffix(d.level)}`,
+      content: `* Bước 1. Gợi ý tưởng: cô mở môi trường chơi từ kinh nghiệm trong ngày; trẻ tự đề xuất mình muốn chơi gì, không yêu cầu mọi góc cùng “trang trí” theo chủ đề.\n* Bước 2. Thỏa thuận – Lập kế hoạch: trẻ chọn góc, vai, bạn, vật liệu và nói ngắn gọn dự định chơi.\n* Bước 3. Thực hiện chơi: trẻ chủ động tạo tình huống, giao tiếp và sử dụng vật thay thế; cô quan sát, nhập vai khi cần để kéo dài mạch chơi chứ không chỉ đạo.\n* Bước 4. Mở rộng: đưa một vấn đề tự nhiên liên quan trải nghiệm buổi sáng/hoạt động trọng tâm để nhóm chơi tự tìm cách xử lý; cho phép đổi vai, đổi vật liệu.\n* Bước 5. Chia sẻ – Đánh giá – Kết thúc: trẻ kể điều nhóm đã làm, khó khăn/cách giải quyết và cùng phân loại, cất học liệu.${detailSuffix(d.level)}`,
       materials: `Các góc phù hợp không gian lớp; học liệu mở và vật liệu sẵn có${d.availableMaterials ? `: ${d.availableMaterials}` : ''}.`,
       notes: 'Không áp đặt tất cả góc phải cùng một nội dung chủ đề; ưu tiên hứng thú, lựa chọn và mạch chơi của trẻ.', structure: ['Gợi hứng thú – lựa chọn ý tưởng','Thỏa thuận – lập kế hoạch','Thực hiện chơi','Mở rộng trò chơi','Chia sẻ – đánh giá – kết thúc'], sourceName: FRAMEWORK_SOURCE, sourceLabel: 'Sườn Hoạt động góc'
     },
@@ -149,7 +168,7 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
     },
     'Hoạt động chiều': {
       objective: `Củng cố hoặc mở rộng một nội dung đã trải nghiệm trong ngày; tạo cơ hội cho trẻ thực hành theo nhu cầu.`,
-      content: `- Nhắc lại trải nghiệm nổi bật bằng câu hỏi mở, sản phẩm hoặc vật thật.\n- Tổ chức một nhiệm vụ ngắn để trẻ vận dụng: phân loại, kể lại, hoàn thiện sản phẩm, trò chơi học tập hoặc kỹ năng tự phục vụ tùy mục tiêu.\n- Cho trẻ chơi theo ý thích; cô hỗ trợ nhóm/trẻ còn cần củng cố.${detailSuffix(d.level)}`,
+      content: `- Sau ngủ dậy: vệ sinh, vận động nhẹ và trò chuyện ngắn để trẻ chuyển trạng thái.\n- Chọn MỘT nội dung cần củng cố từ quan sát buổi sáng: trẻ có thể kể lại, phân loại, hoàn thiện sản phẩm, chơi học tập hoặc thực hành kỹ năng; không dạy lại nguyên hoạt động có chủ đích.\n- Phân hóa: nhóm đã vững được thử cách khó/mở hơn; trẻ còn cần hỗ trợ được làm với ít lựa chọn hơn hoặc cùng bạn.\n- Dành thời gian chơi theo ý thích và chuẩn bị chuyển sang nêu gương/trả trẻ.${detailSuffix(d.level)}`,
       materials: 'Sản phẩm/học liệu còn lại từ hoạt động trong ngày và đồ chơi lớp.',
       notes: 'Không biến sinh hoạt chiều thành một “tiết học” thứ hai; ưu tiên nhẹ nhàng, củng cố và lựa chọn.', sourceName: SAMPLE_SOURCE, sourceLabel: 'Cấu trúc kế hoạch mẫu'
     },
@@ -177,6 +196,7 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
   if (d.ageGroup !== '5-6 tuổi') warnings.push('Chưa có bộ mục tiêu chuyên môn được tải lên cho độ tuổi này. Mục tiêu AI đề xuất cần giáo viên kiểm tra.');
   if (d.ageGroup === '5-6 tuổi' && !themeMatch && d.date) warnings.push('Ngày đã chọn không nằm trong lịch chủ đề 5–6 tuổi đang được nạp hoặc thuộc thời gian nghỉ/ôn tập.');
   if (!main.grounded) warnings.push('Chưa nhận diện chắc chắn sườn chuyên môn cho hoạt động có chủ đích.');
+  warnings.push(wholeDayNote(d));
 
   return {
     id: `plan-${Date.now()}`,

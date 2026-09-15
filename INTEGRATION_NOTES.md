@@ -39,3 +39,10 @@ Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn 
 - Mỗi bước có: Hoạt động của cô; Hoạt động của trẻ; Câu hỏi mở; Dự kiến phản hồi; Tình huống/cách hỗ trợ; Minh chứng quan sát.
 - Bài thử “Tìm hiểu về trường mầm non của bé” có tình huống thực tế “bạn mới đến trường”, nhiệm vụ khám phá nhóm nhỏ, thử thách hướng dẫn bạn mới và thay đổi điều kiện để trẻ giải quyết vấn đề/thích ứng.
 - Không thay đổi mã/mục tiêu 388 và không thay đổi logic phân tầng 4 phẩm chất – 5 năng lực.
+
+### Cập nhật kế hoạch giáo dục cả ngày
+- Liên kết 9 thời điểm trong ngày theo một mạch trải nghiệm nhưng không ép mọi hoạt động lặp cùng chủ đề/đối tượng.
+- Tăng tính cụ thể cho đón trẻ, thể dục sáng, ngoài trời, hoạt động góc và hoạt động chiều.
+- Hoạt động chiều chỉ củng cố một nội dung cần thiết, không dạy lại nguyên hoạt động có chủ đích.
+- Bổ sung lưu ý cân bằng động – tĩnh, trong lớp – ngoài trời và phương án theo thời tiết.
+- Giữ nguyên dữ liệu mục tiêu 388, sườn hoạt động có chủ đích và logic phân tầng 4 phẩm chất – 5 năng lực.
