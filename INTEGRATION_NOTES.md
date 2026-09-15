@@ -26,3 +26,10 @@ Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn 
 - Không mặc định gắn cả 9: chỉ đánh dấu yếu tố phù hợp theo mục tiêu/nội dung/hoạt động.
 - Mỗi yếu tố có biểu hiện mong đợi và cơ hội tổ chức cụ thể; phần Hoạt động có chủ đích phải hiện cách thực hiện.
 - Trang Kiểm tra kế hoạch bổ sung kiểm tra việc có phẩm chất/năng lực và có cơ hội thực tế trong hoạt động.
+
+### Cập nhật phân tầng 4 phẩm chất – 5 năng lực
+- Không còn đánh dấu gần đủ 9 yếu tố theo từ khóa rộng.
+- Ưu tiên bằng chứng trong mục tiêu gốc; bối cảnh hoạt động chỉ bổ trợ.
+- Phân tầng: Trọng tâm / Phối hợp / Không trọng tâm.
+- Tối đa 2 phẩm chất và 3 năng lực được đưa vào tiến trình; yếu tố thiếu căn cứ không tự gắn.
+- Phần kết quả hiển thị rõ mức độ cạnh từng phẩm chất/năng lực.

@@ -101,6 +101,7 @@ export interface CoreDevelopmentItem {
   name: string;
   kind: 'Phẩm chất' | 'Năng lực';
   selected: boolean;
+  priority?: 'Trọng tâm' | 'Phối hợp' | 'Không trọng tâm';
   evidence: string;
   opportunity: string;
 }
