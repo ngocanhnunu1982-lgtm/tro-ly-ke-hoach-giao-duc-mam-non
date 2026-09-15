@@ -68,7 +68,7 @@ export function DailyPlanFormPage() {
       if (!next.schoolAddress) next.schoolAddress = classProfile.schoolAddress || '';
       if (!next.teacherName) next.teacherName = classProfile.teacherName || '';
       if (!next.className) next.className = classProfile.className || '';
-      if (!next.ageGroup) next.ageGroup = classProfile.ageGroup || next.ageGroup;
+      if (!draftFormData?.ageGroup && classProfile.ageGroup) next.ageGroup = classProfile.ageGroup;
       if (!next.studentCount) next.studentCount = classProfile.studentCount ? String(classProfile.studentCount) : '';
       if (!next.classroomCondition) next.classroomCondition = classProfile.classroomCondition || '';
       if (!next.playgroundCondition) next.playgroundCondition = classProfile.playgroundCondition || '';

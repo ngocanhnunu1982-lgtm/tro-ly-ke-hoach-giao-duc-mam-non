@@ -17,6 +17,9 @@ export function CheckPlanPage() {
   const goalCodes=(d.objectives.match(/(?:TC|TX|NN|NT|NgT)\s*\d+(?:\.\d+)?/g)||[]).map(x=>x.replace(/\s+/g,''));
   const knownCodes=new Set(CURRICULUM_GOALS.map(g=>g.code.replace(/\s+/g,'')));
   const framework=findFramework(`${d.plannedActivity} ${d.developmentDomain}`);
+  const core=plan.coreDevelopment;
+  const selectedCore=core?[...core.qualities,...core.competencies].filter(x=>x.selected):[];
+  const mainSection=plan.sections.find(s=>s.title==='Hoạt động có chủ đích');
   const checks=[
     {label:'Đúng độ tuổi của bộ mục tiêu',ok:d.ageGroup==='5-6 tuổi',hint:d.ageGroup==='5-6 tuổi'?'Bộ mục tiêu 5–6 tuổi đang được nạp.':'Chưa có bộ mục tiêu chuyên môn cho độ tuổi này.'},
     {label:'Đúng chủ đề của tuần',ok:!scheduled || (scheduled.mainTheme===d.mainTheme && scheduled.subTheme===d.subTheme),hint:scheduled?`Theo lịch: ${scheduled.mainTheme} → ${scheduled.subTheme}`:'Không có chủ đề lịch để đối chiếu ngày này.'},
@@ -24,6 +27,8 @@ export function CheckPlanPage() {
     {label:'Hoạt động học nhận diện được sườn',ok:!!framework,hint:framework?framework.title:'Chưa tìm thấy sườn tương ứng; cần giáo viên kiểm tra.'},
     {label:'Có mạch giáo dục trong ngày',ok:!!plan.educationalChain && plan.sections.length>=8,hint:`${plan.sections.length} phần hoạt động đã được tạo.`},
     {label:'Có nguồn truy xuất',ok:!!plan.objectiveSource && plan.sections.every(s=>!!s.source),hint:'Mục tiêu/chủ đề/sườn nên hiển thị nguồn rõ ràng.'},
+    {label:'Có phát triển 4 phẩm chất – 5 năng lực',ok:!!core && selectedCore.length>=3,hint:core?`Đang hướng tới: ${selectedCore.map(x=>x.name).join(', ')}.`:'Kế hoạch cũ chưa có lớp phát triển phẩm chất/năng lực.'},
+    {label:'Phẩm chất/năng lực được đưa vào cách tổ chức',ok:!!mainSection && /PHẨM CHẤT – NĂNG LỰC/.test(mainSection.content),hint:'Không chỉ ghi nhãn; hoạt động cần có cơ hội cụ thể để trẻ thể hiện.'},
   ];
 
   const issues=checks.filter(c=>!c.ok).length;

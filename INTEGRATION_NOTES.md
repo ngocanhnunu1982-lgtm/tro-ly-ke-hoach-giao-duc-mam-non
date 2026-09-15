@@ -19,3 +19,10 @@ Các thay đổi chính:
 - Giữ localStorage và luồng hiện có.
 
 Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn tất được npm install từ mạng, nhưng toàn bộ file TS/TSX đã được kiểm tra cú pháp bằng TypeScript transpiler và không phát hiện lỗi cú pháp.
+
+## Cập nhật 4 phẩm chất – 5 năng lực
+- Từ mục tiêu đã chọn, hệ thống phát triển thành 4 phẩm chất: Yêu thương, Tôn trọng, Trung thực, Trách nhiệm.
+- 5 năng lực nền tảng: Giao tiếp, Hợp tác, Giải quyết vấn đề, Tự lực, Thích ứng.
+- Không mặc định gắn cả 9: chỉ đánh dấu yếu tố phù hợp theo mục tiêu/nội dung/hoạt động.
+- Mỗi yếu tố có biểu hiện mong đợi và cơ hội tổ chức cụ thể; phần Hoạt động có chủ đích phải hiện cách thực hiện.
+- Trang Kiểm tra kế hoạch bổ sung kiểm tra việc có phẩm chất/năng lực và có cơ hội thực tế trong hoạt động.

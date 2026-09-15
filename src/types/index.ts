@@ -97,6 +97,20 @@ export interface ActivitySection {
   structure?: string[];
 }
 
+export interface CoreDevelopmentItem {
+  name: string;
+  kind: 'Phẩm chất' | 'Năng lực';
+  selected: boolean;
+  evidence: string;
+  opportunity: string;
+}
+
+export interface CoreDevelopmentProfile {
+  qualities: CoreDevelopmentItem[];
+  competencies: CoreDevelopmentItem[];
+  sourceLabel: string;
+}
+
 export interface GeneratedPlan {
   id: string;
   formData: PlanFormData;
@@ -106,7 +120,9 @@ export interface GeneratedPlan {
   objectiveSource?: DocumentSource;
   themeSource?: DocumentSource;
   reviewWarnings?: string[];
+  coreDevelopment?: CoreDevelopmentProfile;
 }
+
 
 export type PageKey =
   | 'home'

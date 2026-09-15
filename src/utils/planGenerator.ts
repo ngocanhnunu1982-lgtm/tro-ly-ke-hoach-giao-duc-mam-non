@@ -1,6 +1,7 @@
 import type { PlanFormData, ActivitySection, GeneratedPlan, PlanLevel } from '@/types';
 import { ACTIVITY_SECTION_TITLES, ACTIVITY_ICONS, ACTIVITY_TIMES, ACTIVITY_DURATIONS } from '@/data/constants';
 import { findThemeByDate, findFramework, suggestGoals, GOAL_SOURCE, THEME_SOURCE, FRAMEWORK_SOURCE, SAMPLE_SOURCE } from '@/data/knowledgeBase';
+import { deriveCoreDevelopment, developmentPrompt } from '@/data/coreDevelopment';
 
 function detailSuffix(level: PlanLevel): string {
   if (level === 'Nhanh') return '';
@@ -44,6 +45,8 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
     ? { ...formData, mainTheme: formData.mainTheme || themeMatch.mainTheme, subTheme: formData.subTheme || themeMatch.subTheme }
     : formData;
   const objectives = chosenObjectives(d);
+  const coreDevelopment = deriveCoreDevelopment(d);
+  const coreOpportunities = developmentPrompt(coreDevelopment);
   const main = mainActivityContent(d);
 
   const templates: Record<string, Pick<ActivitySection,'objective'|'content'|'materials'|'notes'> & { structure?: string[]; sourceName: string; sourceLabel: string; grounded?: boolean }> = {
@@ -67,7 +70,7 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
     },
     'Hoạt động có chủ đích': {
       objective: objectives,
-      content: main.text,
+      content: `${main.text}\n\nPHẨM CHẤT – NĂNG LỰC ĐƯỢC THỰC HIỆN TRONG HOẠT ĐỘNG\n${coreOpportunities}`,
       materials: `Ưu tiên vật thật/học liệu mở và đồ dùng lớp đang có${d.availableMaterials ? `: ${d.availableMaterials}` : ''}. Chỉ bổ sung vật liệu dễ kiếm, an toàn và phù hợp nhiệm vụ.`,
       notes: main.grounded ? `Sử dụng sườn hoạt động được nhận diện từ ${FRAMEWORK_SOURCE}.` : 'AI đề xuất – cần giáo viên kiểm tra vì chưa nhận diện chắc chắn sườn chuyên môn tương ứng.',
       structure: main.structure, sourceName: main.grounded ? FRAMEWORK_SOURCE : 'AI', sourceLabel: main.grounded ? 'Sườn giáo án' : 'AI đề xuất', grounded: main.grounded
@@ -122,11 +125,12 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
     objectiveSource: source(selectedGoals.length ? 'Mục tiêu chương trình thí điểm' : 'AI đề xuất', selectedGoals.length ? GOAL_SOURCE : 'AI', selectedGoals.length > 0),
     themeSource: themeMatch ? source('Chủ đề theo kế hoạch năm', THEME_SOURCE, true) : undefined,
     reviewWarnings: warnings,
+    coreDevelopment,
   };
 }
 
 export function generateObjectives(formData: Partial<PlanFormData>): string {
-  const goals = suggestGoals({ ageGroup: formData.ageGroup || '3-4 tuổi', developmentDomain: formData.developmentDomain, plannedActivity: formData.plannedActivity, coreContent: formData.coreContent, subTheme: formData.subTheme, limit: 6 });
+  const goals = suggestGoals({ ageGroup: formData.ageGroup || '3-4 tuổi', developmentDomain: formData.developmentDomain, plannedActivity: formData.plannedActivity, coreContent: formData.coreContent, subTheme: formData.subTheme, limit: 2 });
   if (goals.length) return goals.map(g => g.goal).join('\n');
   return `AI đề xuất – cần giáo viên kiểm tra: Chưa có bộ mục tiêu chuyên môn đã nạp cho ${formData.ageGroup || 'độ tuổi này'}.`;
 }
