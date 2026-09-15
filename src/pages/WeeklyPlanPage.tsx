@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { ArrowLeft, CalendarRange, Sparkles, AlertTriangle, ArrowRight, Save, Printer, CheckCircle2 } from 'lucide-react';
 import { findThemeByDate, suggestGoals, THEME_SOURCE, GOAL_SOURCE, SAMPLE_SOURCE } from '@/data/knowledgeBase';
@@ -6,6 +6,55 @@ import type { DayOfWeek } from '@/types';
 
 const dayNames: DayOfWeek[] = ['Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu'];
 const WEEKLY_STORAGE_KEY = 'kgm_weekly_plans';
+
+type WeeklyLessonInput = { domain: string; activityType: string; title: string };
+
+const DOMAIN_ACTIVITY_OPTIONS: Record<string, string[]> = {
+  'Nhận thức': ['Khám phá', 'Làm quen với toán'],
+  'Ngôn ngữ': ['Thơ/ca dao/đồng dao', 'Kể chuyện', 'Làm quen chữ cái'],
+  'Thể chất': ['Tiết thể dục'],
+  'Tình cảm – Xã hội': ['Giáo dục tình cảm – kỹ năng xã hội'],
+  'Nghệ thuật – Âm nhạc': ['Âm nhạc'],
+  'Nghệ thuật – Tạo hình': ['Tạo hình'],
+};
+const WEEKLY_DOMAINS = Object.keys(DOMAIN_ACTIVITY_OPTIONS);
+
+function weekNumberFromSchoolStart(startDate: string) {
+  const [y,m,d] = startDate.split('-').map(Number);
+  const current = Date.UTC(y,m-1,d);
+  const base = Date.UTC(2026,8,7);
+  return Math.max(1, Math.floor((current-base)/(7*86400000))+1);
+}
+
+function suggestedLessonInputs(startDate: string): WeeklyLessonInput[] {
+  const w = weekNumberFromSchoolStart(startDate);
+  const language = ['Thơ/ca dao/đồng dao','Kể chuyện','Làm quen chữ cái'][(w-1)%3];
+  const art = w % 2 === 1 ? 'Âm nhạc' : 'Tạo hình';
+  const artDomain = art === 'Âm nhạc' ? 'Nghệ thuật – Âm nhạc' : 'Nghệ thuật – Tạo hình';
+  return [
+    { domain:'Nhận thức', activityType:'Khám phá', title:'' },
+    { domain:'Nhận thức', activityType:'Làm quen với toán', title:'' },
+    { domain:'Ngôn ngữ', activityType:language, title:'' },
+    { domain:'Thể chất', activityType:'Tiết thể dục', title:'' },
+    { domain:artDomain, activityType:art, title:'' },
+  ];
+}
+
+function focusFromTeacherInput(input: WeeklyLessonInput, subTheme: string) {
+  const title = input.title.trim() || `${input.activityType} – ${subTheme}`;
+  const coreByType: Record<string,string> = {
+    'Khám phá':'Quan sát, trải nghiệm, thu thập thông tin, chia sẻ phát hiện và giải quyết tình huống gần gũi.',
+    'Làm quen với toán':'Trẻ thao tác với vật thật, đếm/so sánh/phân loại/nhận biết số lượng hoặc hình dạng theo đúng đề tài.',
+    'Thơ/ca dao/đồng dao':'Nghe, hiểu nội dung, cảm nhận ngôn ngữ và thể hiện tác phẩm phù hợp khả năng.',
+    'Kể chuyện':'Nghe hiểu, trao đổi về nhân vật/sự việc và kể lại hoặc thể hiện câu chuyện phù hợp.',
+    'Làm quen chữ cái':'Nhận biết âm và cấu tạo chữ, phát âm, phân biệt và luyện tập qua trò chơi đa giác quan.',
+    'Tiết thể dục':'Thực hiện vận động theo đề tài, rèn phối hợp, tự tin và bảo đảm an toàn.',
+    'Giáo dục tình cảm – kỹ năng xã hội':'Nhận biết cảm xúc, ứng xử phù hợp, tôn trọng, hợp tác và thực hành trong tình huống gần gũi.',
+    'Âm nhạc':'Nghe, hát, vận động/cảm thụ âm nhạc và thể hiện cảm xúc, sáng tạo theo đề tài.',
+    'Tạo hình':'Quan sát, lựa chọn vật liệu/kỹ năng tạo hình và sáng tạo sản phẩm theo đề tài.',
+  };
+  return { domain: input.domain, activity: `${input.activityType}: ${title}`, core: coreByType[input.activityType] || `Trẻ trải nghiệm và thực hành theo đề tài “${title}”.`, activityType: input.activityType };
+}
 
 function addDays(iso: string, n: number) {
   const [y, m, d] = iso.split('-').map(Number);
@@ -94,6 +143,9 @@ export function WeeklyPlanPage() {
   const [startDate, setStartDate] = useState('2026-09-07');
   const [generated, setGenerated] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [lessonInputs, setLessonInputs] = useState<WeeklyLessonInput[]>(() => suggestedLessonInputs('2026-09-07'));
+  useEffect(() => { setLessonInputs(suggestedLessonInputs(startDate)); }, [startDate]);
+  const updateLesson = (index: number, patch: Partial<WeeklyLessonInput>) => setLessonInputs(prev => prev.map((item,i) => i === index ? { ...item, ...patch } : item));
   const ageGroup = classProfile?.ageGroup || '5-6 tuổi';
   const theme = useMemo(() => findThemeByDate(startDate, ageGroup), [startDate, ageGroup]);
 
@@ -102,7 +154,7 @@ export function WeeklyPlanPage() {
     return dayNames.map((day, index) => {
       const date = addDays(startDate, index);
       const dayTheme = findThemeByDate(date, ageGroup) || theme;
-      const focus = buildDailyFocus(dayTheme.subTheme, index);
+      const focus = focusFromTeacherInput(lessonInputs[index] || suggestedLessonInputs(startDate)[index], dayTheme.subTheme);
       const goals = suggestGoals({
         ageGroup,
         developmentDomain: focus.domain,
@@ -114,7 +166,7 @@ export function WeeklyPlanPage() {
       const momentGoals = Object.fromEntries(['reception','morningExercise','outdoor','corners','care','afternoon','recognition','pickup'].map(key => [key, weeklyMomentGoals(ageGroup, dayTheme.subTheme, key, focus.domain, focus.activity)]));
       return { day, date, theme: dayTheme, focus, goals, momentGoals, dayPlan: buildDayPlan(dayTheme.subTheme, index) };
     });
-  }, [startDate, ageGroup, theme]);
+  }, [startDate, ageGroup, theme, lessonInputs]);
 
   const openDay = (index: number) => {
     const item = weekDays[index];
@@ -157,7 +209,23 @@ export function WeeklyPlanPage() {
       <section className="card p-5">
         <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <div><label className="label-base">Ngày thứ Hai của tuần</label><input type="date" className="input-base" value={startDate} onChange={e=>{setStartDate(e.target.value);setGenerated(false);setSaved(false)}} /></div>
-          <button className="btn-primary" onClick={()=>setGenerated(true)}><Sparkles className="h-5 w-5" />Tạo kế hoạch tuần</button>
+          <div className="text-xs text-stone-500 sm:text-right">Bước 1: chọn tuần<br/>Bước 2: chọn hoạt động bên dưới</div>
+        </div>
+        <div className="mt-5 border-t border-stone-200 pt-5">
+          <div className="mb-3">
+            <h3 className="font-bold text-stone-800">Giáo viên chọn hoạt động có chủ đích của tuần</h3>
+            <p className="mt-1 text-sm text-stone-500">App chỉ gợi ý lịch luân phiên. Cô có thể đổi lĩnh vực, loại hoạt động và nhập tên đề tài riêng trước khi tạo kế hoạch tuần.</p>
+            <p className="mt-1 text-xs text-secondary-700">Gợi ý tuần {weekNumberFromSchoolStart(startDate)}: Nghệ thuật luân phiên Âm nhạc/Tạo hình; PTNN luân phiên Thơ → Kể chuyện → Chữ cái. Giáo viên luôn có quyền thay đổi.</p>
+          </div>
+          <div className="space-y-3">
+            {dayNames.map((day,index) => { const item=lessonInputs[index]; return <div key={day} className="grid gap-2 rounded-xl border border-stone-200 bg-stone-50/60 p-3 lg:grid-cols-[110px_1fr_1fr_2fr]">
+              <div className="font-semibold text-stone-700">{day}<span className="block text-xs font-normal text-stone-400">{shortDate(addDays(startDate,index))}</span></div>
+              <select className="input-base" value={item.domain} onChange={e=>{const domain=e.target.value; const activityType=DOMAIN_ACTIVITY_OPTIONS[domain]?.[0] || ''; updateLesson(index,{domain,activityType});}}>{WEEKLY_DOMAINS.map(d=><option key={d} value={d}>{d}</option>)}</select>
+              <select className="input-base" value={item.activityType} onChange={e=>updateLesson(index,{activityType:e.target.value})}>{(DOMAIN_ACTIVITY_OPTIONS[item.domain]||[]).map(a=><option key={a} value={a}>{a}</option>)}</select>
+              <input className="input-base" value={item.title} onChange={e=>updateLesson(index,{title:e.target.value})} placeholder="Nhập tên đề tài cô sẽ dạy…" />
+            </div> })}
+          </div>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3"><p className="text-xs text-stone-500">Sau khi tạo tuần, hệ thống dùng chính tên đề tài cô nhập để gợi ý mục tiêu 388. Cô tiếp tục duyệt/chỉnh mục tiêu khi mở “Soạn chi tiết”.</p><button className="btn-primary" onClick={()=>setGenerated(true)}><Sparkles className="h-5 w-5" />Soạn kế hoạch tuần</button></div>
         </div>
         {ageGroup !== '5-6 tuổi' && <div className="mt-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"><AlertTriangle className="h-4 w-4 shrink-0" />Hiện chỉ có bộ mục tiêu và lịch chủ đề chuyên môn cho 5–6 tuổi. Không tự gắn mục tiêu chính thức cho độ tuổi khác.</div>}
         {theme && <div className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800"><strong>{theme.mainTheme}</strong> → {theme.subTheme}<span className="block text-xs">Nguồn chủ đề: {THEME_SOURCE}</span></div>}

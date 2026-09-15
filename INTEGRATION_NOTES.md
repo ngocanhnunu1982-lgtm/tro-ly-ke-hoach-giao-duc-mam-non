@@ -60,3 +60,10 @@ Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn 
 - Âm nhạc/Tạo hình được ánh xạ về nhóm Nghệ thuật; Tình cảm – Xã hội ánh xạ về nhóm mục tiêu TX.
 - Sửa xử lý ngày tuần theo ngày địa phương để tránh lùi một ngày do UTC.
 - Làm sạch mã mục tiêu khi chuyển từ Kế hoạch tuần sang Kế hoạch ngày, tránh dạng NT 2.1. NT 2.1...
+
+## Cập nhật giáo viên chủ động chọn kế hoạch tuần
+- Trước khi soạn tuần, giáo viên chọn lĩnh vực và loại hoạt động cho từng ngày, đồng thời nhập tên đề tài riêng.
+- App chỉ gợi ý chu kỳ: Nghệ thuật luân phiên Âm nhạc/Tạo hình; PTNN luân phiên Thơ → Kể chuyện → Làm quen chữ cái. Giáo viên có thể đổi bất kỳ ngày nào.
+- Tên đề tài giáo viên nhập được dùng cùng loại hoạt động, lĩnh vực và chủ đề để gợi ý mục tiêu 388.
+- Khi bấm “Soạn chi tiết”, dữ liệu đề tài + lĩnh vực + mục tiêu được chuyển sang kế hoạch ngày; loại hoạt động được giữ trong tên hoạt động để nhận diện đúng sườn chuyên môn khi tài liệu SƯỜN GA có sườn tương ứng.
+- Không tự nhận là có sườn chuyên môn cho Âm nhạc/Tạo hình nếu tài liệu đã nạp chưa cung cấp sườn đó.
