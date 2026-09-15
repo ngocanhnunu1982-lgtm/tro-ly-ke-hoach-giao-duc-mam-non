@@ -21,8 +21,9 @@ export const DEVELOPMENT_DOMAINS = [
   'Thể chất',
   'Nhận thức',
   'Ngôn ngữ',
-  'Cảm xúc – Xã hội',
-  'Thẩm mỹ',
+  'Tình cảm – Xã hội',
+  'Nghệ thuật – Âm nhạc',
+  'Nghệ thuật – Tạo hình',
   'Tìm hiểu môi trường xung quanh',
 ];
 

@@ -8,9 +8,12 @@ const dayNames: DayOfWeek[] = ['Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','
 const WEEKLY_STORAGE_KEY = 'kgm_weekly_plans';
 
 function addDays(iso: string, n: number) {
-  const d = new Date(`${iso}T00:00:00`);
-  d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(y, m - 1, d + n, 12, 0, 0);
+  const yy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yy}-${mm}-${dd}`;
 }
 
 function shortDate(iso: string) {
@@ -24,9 +27,25 @@ function buildDailyFocus(subTheme: string, index: number) {
     { domain: 'Nhận thức', activity: `Làm quen với toán qua trải nghiệm trong “${subTheme}”`, core: 'Đếm, so sánh, phân loại hoặc nhận biết hình dạng bằng vật thật phù hợp nội dung tuần.' },
     { domain: 'Ngôn ngữ', activity: `Kể chuyện và trò chuyện về “${subTheme}”`, core: 'Nghe hiểu, trao đổi, kể lại hoặc sáng tạo lời kể từ trải nghiệm của trẻ.' },
     { domain: 'Thể chất', activity: `Tiết thể dục: Vận động theo nhiệm vụ gắn với “${subTheme}”`, core: 'Thực hiện vận động phù hợp độ tuổi, phối hợp với bạn và bảo đảm an toàn.' },
-    { domain: 'Ngôn ngữ', activity: `Đọc thơ, ca dao, đồng dao gắn với “${subTheme}”`, core: 'Cảm nhận ngôn ngữ, thể hiện nhịp điệu và chia sẻ điều trẻ hiểu/thích.' },
+    { domain: 'Nghệ thuật – Âm nhạc', activity: `Âm nhạc: Hát, vận động và cảm nhận gắn với “${subTheme}”`, core: 'Nghe, hát hoặc vận động theo nhạc; thể hiện cảm xúc và sáng tạo cách biểu đạt phù hợp.' },
   ];
   return focus[index];
+}
+
+function weeklyMomentGoals(ageGroup: any, subTheme: string, key: string, focusDomain: string, focusActivity: string) {
+  if (ageGroup !== '5-6 tuổi') return [];
+  const contexts: Record<string, { domain: string; activity: string; content: string; limit: number }> = {
+    reception: { domain: 'Tình cảm – Xã hội', activity: 'trò chuyện giao tiếp tự phục vụ', content: `cảm xúc giao tiếp ${subTheme}`, limit: 2 },
+    morningExercise: { domain: 'Thể chất', activity: 'thể dục vận động', content: 'vận động sức khỏe an toàn', limit: 2 },
+    outdoor: { domain: 'Nhận thức', activity: 'khám phá quan sát ngoài trời', content: `quan sát môi trường hợp tác ${subTheme}`, limit: 3 },
+    corners: { domain: 'Tình cảm – Xã hội', activity: 'hoạt động góc chơi nhóm', content: 'lựa chọn hợp tác giao tiếp giải quyết tình huống', limit: 3 },
+    care: { domain: 'Thể chất', activity: 'vệ sinh ăn ngủ tự phục vụ', content: 'vệ sinh sức khỏe tự phục vụ', limit: 2 },
+    afternoon: { domain: focusDomain, activity: `củng cố ${focusActivity}`, content: 'thực hành củng cố lựa chọn', limit: 2 },
+    recognition: { domain: 'Tình cảm – Xã hội', activity: 'nêu gương tự nhận xét', content: 'trách nhiệm tôn trọng cảm xúc', limit: 2 },
+    pickup: { domain: 'Tình cảm – Xã hội', activity: 'chào hỏi giao tiếp tự phục vụ', content: 'giao tiếp chuẩn bị đồ dùng', limit: 2 },
+  };
+  const c = contexts[key];
+  return c ? suggestGoals({ ageGroup, developmentDomain: c.domain, plannedActivity: c.activity, coreContent: c.content, subTheme, limit: c.limit }) : [];
 }
 
 function buildDayPlan(subTheme: string, index: number) {
@@ -92,7 +111,8 @@ export function WeeklyPlanPage() {
         subTheme: dayTheme.subTheme,
         limit: 2,
       });
-      return { day, date, theme: dayTheme, focus, goals, dayPlan: buildDayPlan(dayTheme.subTheme, index) };
+      const momentGoals = Object.fromEntries(['reception','morningExercise','outdoor','corners','care','afternoon','recognition','pickup'].map(key => [key, weeklyMomentGoals(ageGroup, dayTheme.subTheme, key, focus.domain, focus.activity)]));
+      return { day, date, theme: dayTheme, focus, goals, momentGoals, dayPlan: buildDayPlan(dayTheme.subTheme, index) };
     });
   }, [startDate, ageGroup, theme]);
 
@@ -108,7 +128,7 @@ export function WeeklyPlanPage() {
       coreContent: item.focus.core,
       developmentDomain: item.focus.domain,
       plannedActivity: item.focus.activity,
-      objectives: item.goals.map(g => `${g.code}. ${g.goal}`).join('\n'),
+      objectives: item.goals.map(g => `${g.code}. ${g.goal.replace(new RegExp(`^${g.code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\.?\\s*`), '')}`).join('\n'),
     });
     navigate('daily-plan');
   };
@@ -160,7 +180,7 @@ export function WeeklyPlanPage() {
                 <tbody>
                   {[
                     ['Đón trẻ – Trò chuyện','reception'],['Thể dục sáng','morningExercise'],['Chơi ngoài trời','outdoor'],['Hoạt động có chủ đích','focus'],['Hoạt động góc','corners'],['Vệ sinh – Ăn – Ngủ','care'],['Hoạt động chiều','afternoon'],['Nêu gương','recognition'],['Trả trẻ','pickup'],
-                  ].map(([label,key])=><tr key={key}><th className="border-b border-r border-stone-200 bg-stone-50/60 p-3 align-top text-left font-semibold text-stone-600">{label}</th>{weekDays.map((item,index)=><td key={`${key}-${item.date}`} className="border-b border-r border-stone-200 p-3 align-top text-stone-700">{key === 'focus' ? <><p className="font-semibold text-stone-800">{item.focus.activity}</p><p className="mt-1 text-xs text-stone-500">{item.focus.core}</p>{item.goals.length > 0 && <p className="mt-2 text-xs text-emerald-700">Mục tiêu: {item.goals.map(g=>g.code).join(', ')}</p>}<button className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-secondary-700" onClick={()=>openDay(index)}>Soạn chi tiết <ArrowRight className="h-3.5 w-3.5" /></button></> : item.dayPlan[key as keyof typeof item.dayPlan]}</td>)}</tr>)}
+                  ].map(([label,key])=><tr key={key}><th className="border-b border-r border-stone-200 bg-stone-50/60 p-3 align-top text-left font-semibold text-stone-600">{label}</th>{weekDays.map((item,index)=><td key={`${key}-${item.date}`} className="border-b border-r border-stone-200 p-3 align-top text-stone-700">{key === 'focus' ? <><p className="font-semibold text-stone-800">{item.focus.activity}</p><p className="mt-1 text-xs text-stone-500">{item.focus.core}</p>{item.goals.length > 0 && <p className="mt-2 text-xs text-emerald-700">Mục tiêu: {item.goals.map(g=>g.code).join(', ')}</p>}<button className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-secondary-700" onClick={()=>openDay(index)}>Soạn chi tiết <ArrowRight className="h-3.5 w-3.5" /></button></> : <><p>{item.dayPlan[key as keyof typeof item.dayPlan]}</p>{item.momentGoals[key]?.length > 0 && <p className="mt-2 text-xs text-emerald-700">Mục tiêu: {item.momentGoals[key].map((g:any)=>g.code).join(', ')}</p>}</>}</td>)}</tr>)}
                 </tbody>
               </table>
             </div>

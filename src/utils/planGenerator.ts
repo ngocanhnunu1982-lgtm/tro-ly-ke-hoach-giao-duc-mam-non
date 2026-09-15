@@ -9,6 +9,30 @@ function detailSuffix(level: PlanLevel): string {
   return ' Cô quan sát biểu hiện năng lực, ghi nhận mức độ đạt mục tiêu, phân hóa hỗ trợ và dùng kết quả để điều chỉnh hoạt động tiếp theo.';
 }
 
+function cleanGoalText(code: string, goal: string): string {
+  const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return goal.replace(new RegExp(`^${escaped}\\.?\\s*`), '').trim();
+}
+
+function goalsForDailyMoment(d: PlanFormData, title: string): string | undefined {
+  if (d.ageGroup !== '5-6 tuổi') return undefined;
+  const contexts: Record<string, { domain: string; activity: string; content: string; limit: number }> = {
+    'Đón trẻ – Chơi – Trò chuyện': { domain: 'Tình cảm – Xã hội', activity: 'trò chuyện giao tiếp tự phục vụ', content: `cảm xúc giao tiếp tự phục vụ ${d.subTheme}`, limit: 2 },
+    'Thể dục sáng': { domain: 'Thể chất', activity: 'thể dục vận động', content: 'hào hứng vận động sức khỏe an toàn', limit: 2 },
+    'Hoạt động ngoài trời': { domain: 'Nhận thức', activity: 'khám phá quan sát ngoài trời', content: `quan sát khám phá môi trường hợp tác an toàn ${d.subTheme}`, limit: 3 },
+    'Hoạt động góc': { domain: 'Tình cảm – Xã hội', activity: 'hoạt động góc chơi nhóm', content: 'lựa chọn vai chơi hợp tác giao tiếp giải quyết tình huống', limit: 3 },
+    'Vệ sinh – Ăn – Ngủ': { domain: 'Thể chất', activity: 'vệ sinh ăn ngủ tự phục vụ', content: 'vệ sinh sức khỏe tự phục vụ an toàn', limit: 2 },
+    'Hoạt động chiều': { domain: d.developmentDomain || 'Nhận thức', activity: `củng cố ${d.plannedActivity}`, content: `${d.coreContent} thực hành lựa chọn`, limit: 2 },
+    'Nêu gương': { domain: 'Tình cảm – Xã hội', activity: 'nêu gương tự nhận xét hành vi', content: 'cảm xúc trách nhiệm tôn trọng nhận xét bản thân và bạn', limit: 2 },
+    'Trả trẻ': { domain: 'Tình cảm – Xã hội', activity: 'giao tiếp chào hỏi tự phục vụ', content: 'chào hỏi giao tiếp chuẩn bị đồ dùng cá nhân', limit: 2 },
+  };
+  const c = contexts[title];
+  if (!c) return undefined;
+  const goals = suggestGoals({ ageGroup: d.ageGroup, developmentDomain: c.domain, plannedActivity: c.activity, coreContent: c.content, subTheme: d.subTheme, limit: c.limit });
+  if (!goals.length) return undefined;
+  return goals.map(g => `${g.code}. ${cleanGoalText(g.code, g.goal)}`).join('\n');
+}
+
 function chosenObjectives(d: PlanFormData): string {
   if (d.objectives.trim()) return d.objectives.trim();
   const goals = suggestGoals({ ageGroup: d.ageGroup, developmentDomain: d.developmentDomain, plannedActivity: d.plannedActivity, coreContent: d.coreContent, subTheme: d.subTheme, limit: 3 });
@@ -188,7 +212,8 @@ export function generatePlan(formData: PlanFormData): GeneratedPlan {
 
   const sections: ActivitySection[] = ACTIVITY_SECTION_TITLES.map((title) => {
     const tpl = templates[title];
-    return { id: title, title, icon: ACTIVITY_ICONS[title] || 'Circle', time: ACTIVITY_TIMES[title] || '', duration: ACTIVITY_DURATIONS[title] || '', objective: tpl.objective, content: tpl.content, materials: tpl.materials, notes: tpl.notes, structure: tpl.structure, source: source(tpl.sourceLabel, tpl.sourceName, tpl.grounded !== false) };
+    const distributedGoals = title === 'Hoạt động có chủ đích' ? undefined : goalsForDailyMoment(d, title);
+    return { id: title, title, icon: ACTIVITY_ICONS[title] || 'Circle', time: ACTIVITY_TIMES[title] || '', duration: ACTIVITY_DURATIONS[title] || '', objective: distributedGoals || tpl.objective, content: tpl.content, materials: tpl.materials, notes: distributedGoals ? `${tpl.notes} Mục tiêu được gợi ý từ ${GOAL_SOURCE}; giáo viên có thể giữ, bỏ hoặc điều chỉnh theo cơ hội giáo dục thực tế.` : tpl.notes, structure: tpl.structure, source: distributedGoals ? source('Mục tiêu chương trình thí điểm', GOAL_SOURCE, true) : source(tpl.sourceLabel, tpl.sourceName, tpl.grounded !== false) };
   });
 
   const selectedGoals = suggestGoals({ ageGroup: d.ageGroup, developmentDomain: d.developmentDomain, plannedActivity: d.plannedActivity, coreContent: d.coreContent, subTheme: d.subTheme, limit: 3 });

@@ -53,3 +53,10 @@ Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn 
 - Nút “Soạn chi tiết” chuyển ngày, chủ đề, nội dung, lĩnh vực, hoạt động và mục tiêu sang biểu mẫu Kế hoạch ngày.
 - Mạch tuần đi từ khơi kinh nghiệm → mở rộng → vận dụng/tự nhận xét; không ép các ngày lặp cùng một đối tượng.
 - Có lưu kế hoạch tuần trên thiết bị và in trực tiếp; chưa thay đổi logic mục tiêu 388, sườn giáo án và 4 phẩm chất – 5 năng lực.
+
+### Cập nhật phân bổ mục tiêu toàn ngày và lĩnh vực
+- Gợi ý mục tiêu 388 cho các thời điểm trong ngày, không chỉ Hoạt động có chủ đích; mỗi thời điểm lấy 1–3 mục tiêu phù hợp và giáo viên vẫn cần kiểm tra theo cơ hội thực tế.
+- Bổ sung/chuẩn hóa lĩnh vực: Thể chất, Nhận thức, Ngôn ngữ, Tình cảm – Xã hội, Nghệ thuật – Âm nhạc, Nghệ thuật – Tạo hình; giữ Tìm hiểu môi trường xung quanh như lựa chọn tương thích.
+- Âm nhạc/Tạo hình được ánh xạ về nhóm Nghệ thuật; Tình cảm – Xã hội ánh xạ về nhóm mục tiêu TX.
+- Sửa xử lý ngày tuần theo ngày địa phương để tránh lùi một ngày do UTC.
+- Làm sạch mã mục tiêu khi chuyển từ Kế hoạch tuần sang Kế hoạch ngày, tránh dạng NT 2.1. NT 2.1...

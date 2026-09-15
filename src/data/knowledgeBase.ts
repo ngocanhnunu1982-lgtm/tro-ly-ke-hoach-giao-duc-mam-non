@@ -1666,7 +1666,12 @@ export function suggestGoals(params: { ageGroup: AgeGroup; developmentDomain?: s
   const activity = normalized(params.plannedActivity || '');
   const content = normalized(`${params.coreContent || ''} ${params.subTheme || ''}`);
   const aliases: Record<string,string[]> = {
-    'the chat':['the chat'], 'nhan thuc':['nhan thuc'], 'ngon ngu':['ngon ngu'], 'cam xuc – xa hoi':['tinh cam – xa hoi'], 'cam xuc - xa hoi':['tinh cam – xa hoi'], 'tham my':['nghe thuat'], 'tim hieu moi truong xung quanh':['nhan thuc']
+    'the chat':['the chat'], 'nhan thuc':['nhan thuc'], 'ngon ngu':['ngon ngu'],
+    'tinh cam – xa hoi':['tinh cam – xa hoi'], 'tinh cam - xa hoi':['tinh cam – xa hoi'],
+    'cam xuc – xa hoi':['tinh cam – xa hoi'], 'cam xuc - xa hoi':['tinh cam – xa hoi'],
+    'nghe thuat – am nhac':['nghe thuat'], 'nghe thuat - am nhac':['nghe thuat'],
+    'nghe thuat – tao hinh':['nghe thuat'], 'nghe thuat - tao hinh':['nghe thuat'],
+    'tham my':['nghe thuat'], 'tim hieu moi truong xung quanh':['nhan thuc']
   };
   const domainTerms = aliases[domain] || [domain];
   const scored = CURRICULUM_GOALS.map((g) => {
