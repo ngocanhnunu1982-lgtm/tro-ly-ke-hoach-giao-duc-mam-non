@@ -46,3 +46,10 @@ Lưu ý kỹ thuật: môi trường chỉnh sửa ngoại tuyến không hoàn 
 - Hoạt động chiều chỉ củng cố một nội dung cần thiết, không dạy lại nguyên hoạt động có chủ đích.
 - Bổ sung lưu ý cân bằng động – tĩnh, trong lớp – ngoài trời và phương án theo thời tiết.
 - Giữ nguyên dữ liệu mục tiêu 388, sườn hoạt động có chủ đích và logic phân tầng 4 phẩm chất – 5 năng lực.
+
+### Cập nhật kế hoạch giáo dục tuần
+- Kế hoạch tuần hiển thị theo bảng 5 ngày × 9 thời điểm trong ngày, thay cho các thẻ tóm tắt rời.
+- Mỗi ngày có trọng tâm hoạt động có chủ đích, lĩnh vực và mục tiêu gợi ý từ bộ mục tiêu 5–6 tuổi đã nạp.
+- Nút “Soạn chi tiết” chuyển ngày, chủ đề, nội dung, lĩnh vực, hoạt động và mục tiêu sang biểu mẫu Kế hoạch ngày.
+- Mạch tuần đi từ khơi kinh nghiệm → mở rộng → vận dụng/tự nhận xét; không ép các ngày lặp cùng một đối tượng.
+- Có lưu kế hoạch tuần trên thiết bị và in trực tiếp; chưa thay đổi logic mục tiêu 388, sườn giáo án và 4 phẩm chất – 5 năng lực.

@@ -1,51 +1,142 @@
 import { useMemo, useState } from 'react';
 import { useApp } from '@/context/AppContext';
-import { ArrowLeft, CalendarRange, Sparkles, AlertTriangle, ArrowRight } from 'lucide-react';
+import { ArrowLeft, CalendarRange, Sparkles, AlertTriangle, ArrowRight, Save, Printer, CheckCircle2 } from 'lucide-react';
 import { findThemeByDate, suggestGoals, THEME_SOURCE, GOAL_SOURCE, SAMPLE_SOURCE } from '@/data/knowledgeBase';
 import type { DayOfWeek } from '@/types';
 
 const dayNames: DayOfWeek[] = ['Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu'];
-const outdoorIdeas = ['Quan sát – trải nghiệm môi trường gần gũi','Khảo sát và thu thập dấu hiệu theo nhóm','Trò chơi vận động gắn tình huống thực tế','Sáng tạo với học liệu thiên nhiên','Đi dạo – chia sẻ phát hiện trong tuần'];
-const focusIdeas = ['Khám phá bằng vật thật và câu hỏi mở','Toán qua thao tác – so sánh – phân loại','Ngôn ngữ: kể/chia sẻ trải nghiệm','Tạo hình mở từ vật liệu sẵn có','Ôn – vận dụng – chia sẻ sản phẩm'];
-const afternoonIdeas = ['Trò chơi củng cố theo nhóm nhỏ','Hoàn thiện sản phẩm/góc chơi','Kể lại điều đã khám phá','Kỹ năng tự phục vụ và hợp tác','Nêu gương tuần – văn nghệ – chơi theo ý thích'];
+const WEEKLY_STORAGE_KEY = 'kgm_weekly_plans';
 
 function addDays(iso: string, n: number) {
-  const d = new Date(`${iso}T00:00:00`); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10);
+  const d = new Date(`${iso}T00:00:00`);
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function shortDate(iso: string) {
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function buildDailyFocus(subTheme: string, index: number) {
+  const focus = [
+    { domain: 'Nhận thức', activity: `Khám phá: Cùng tìm hiểu “${subTheme}”`, core: 'Quan sát, thu thập thông tin, chia sẻ phát hiện và giải quyết tình huống gần gũi.' },
+    { domain: 'Nhận thức', activity: `Làm quen với toán qua trải nghiệm trong “${subTheme}”`, core: 'Đếm, so sánh, phân loại hoặc nhận biết hình dạng bằng vật thật phù hợp nội dung tuần.' },
+    { domain: 'Ngôn ngữ', activity: `Kể chuyện và trò chuyện về “${subTheme}”`, core: 'Nghe hiểu, trao đổi, kể lại hoặc sáng tạo lời kể từ trải nghiệm của trẻ.' },
+    { domain: 'Thể chất', activity: `Tiết thể dục: Vận động theo nhiệm vụ gắn với “${subTheme}”`, core: 'Thực hiện vận động phù hợp độ tuổi, phối hợp với bạn và bảo đảm an toàn.' },
+    { domain: 'Ngôn ngữ', activity: `Đọc thơ, ca dao, đồng dao gắn với “${subTheme}”`, core: 'Cảm nhận ngôn ngữ, thể hiện nhịp điệu và chia sẻ điều trẻ hiểu/thích.' },
+  ];
+  return focus[index];
+}
+
+function buildDayPlan(subTheme: string, index: number) {
+  const outdoor = [
+    `Quan sát một khu vực/sự vật thực tế có liên hệ với “${subTheme}”; trẻ nêu điều đã biết và điều muốn tìm hiểu.`,
+    'Khảo sát theo cặp/nhóm nhỏ, tìm điểm giống – khác hoặc thu thập dấu hiệu từ môi trường gần gũi.',
+    'Trò chơi vận động ngoài trời; trẻ lựa chọn cách chơi, phối hợp và tuân thủ giới hạn an toàn.',
+    'Sáng tạo với học liệu thiên nhiên/vật liệu sẵn có; khuyến khích nhiều cách làm khác nhau.',
+    'Đi dạo – tìm dấu hiệu đã khám phá trong tuần; trẻ kể lại phát hiện đáng nhớ.',
+  ];
+  const corners = [
+    'Mở góc phân vai/xây dựng theo trải nghiệm đầu tuần; cô quan sát ý tưởng chơi và hỗ trợ trẻ thỏa thuận.',
+    'Bổ sung nhiệm vụ đếm, phân loại, sắp xếp hoặc tạo ký hiệu vào góc chơi phù hợp.',
+    'Góc sách – kể chuyện – đóng vai; trẻ dùng lời nói để trao đổi và phát triển tình huống chơi.',
+    'Góc vận động/xây dựng: phối hợp nhóm, giải quyết khó khăn nảy sinh trong khi chơi.',
+    'Trẻ lựa chọn góc yêu thích, hoàn thiện sản phẩm/mạch chơi và chia sẻ điều đã học trong tuần.',
+  ];
+  const afternoons = [
+    'Trò chơi nhóm nhỏ củng cố trải nghiệm buổi sáng; quan sát trẻ cần hỗ trợ thêm.',
+    'Thực hành kỹ năng tự phục vụ; ôn nội dung bằng thao tác với đồ vật quen thuộc.',
+    'Kể lại/chia sẻ trải nghiệm trong ngày; xem sản phẩm và bổ sung ý tưởng cho ngày sau.',
+    'Trò chơi hợp tác, kỹ năng xử lý tình huống và vệ sinh – sắp xếp môi trường cùng cô.',
+    'Nêu gương cuối tuần; trẻ tự nhận xét điều mình làm được, văn nghệ và chơi theo ý thích.',
+  ];
+  const reception = [
+    `Đón trẻ, quan sát cảm xúc; trò chuyện mở về trải nghiệm của trẻ với “${subTheme}”.`,
+    'Gợi trẻ nhớ lại phát hiện hôm trước; cho trẻ lựa chọn học liệu/chơi nhẹ theo nhu cầu.',
+    'Trò chuyện theo tranh/vật thật hoặc sản phẩm của trẻ; khuyến khích trẻ đặt câu hỏi cho bạn.',
+    'Đón trẻ bằng nhiệm vụ nhỏ tự phục vụ; trao đổi về cách giữ an toàn khi vận động.',
+    'Trẻ chọn một điều đáng nhớ trong tuần để kể với cô/bạn; chuẩn bị tâm thế tổng kết tuần.',
+  ];
+  return {
+    reception: reception[index],
+    morningExercise: 'Khởi động nhẹ – vận động các nhóm cơ – bài tập phát triển chung; điều chỉnh cường độ theo sức khỏe trẻ.',
+    outdoor: outdoor[index],
+    corners: corners[index],
+    care: 'Rửa tay đúng thời điểm; ăn đủ lượng phù hợp; ngủ/nghỉ đúng nề nếp; cô quan sát sức khỏe và hỗ trợ trẻ tự phục vụ.',
+    afternoon: afternoons[index],
+    recognition: index === 4 ? 'Nêu gương cuối tuần: trẻ tự nhận xét, ghi nhận cố gắng của bạn và chọn việc muốn làm tốt hơn tuần sau.' : 'Nêu gương cuối ngày: trẻ chia sẻ một việc mình đã cố gắng; cô ghi nhận biểu hiện cụ thể, không so sánh trẻ.',
+    pickup: 'Trẻ chơi nhẹ, chuẩn bị đồ dùng cá nhân; cô trao đổi ngắn với gia đình về điểm nổi bật/cần phối hợp khi cần.',
+  };
 }
 
 export function WeeklyPlanPage() {
   const { navigate, classProfile, setDraftFormData } = useApp();
   const [startDate, setStartDate] = useState('2026-09-07');
   const [generated, setGenerated] = useState(false);
+  const [saved, setSaved] = useState(false);
   const ageGroup = classProfile?.ageGroup || '5-6 tuổi';
   const theme = useMemo(() => findThemeByDate(startDate, ageGroup), [startDate, ageGroup]);
-  const goals = useMemo(() => suggestGoals({ ageGroup, developmentDomain:'Nhận thức', plannedActivity:'khám phá', subTheme:theme?.subTheme, limit:5 }), [ageGroup, theme]);
+
+  const weekDays = useMemo(() => {
+    if (!theme) return [];
+    return dayNames.map((day, index) => {
+      const date = addDays(startDate, index);
+      const dayTheme = findThemeByDate(date, ageGroup) || theme;
+      const focus = buildDailyFocus(dayTheme.subTheme, index);
+      const goals = suggestGoals({
+        ageGroup,
+        developmentDomain: focus.domain,
+        plannedActivity: focus.activity,
+        coreContent: focus.core,
+        subTheme: dayTheme.subTheme,
+        limit: 2,
+      });
+      return { day, date, theme: dayTheme, focus, goals, dayPlan: buildDayPlan(dayTheme.subTheme, index) };
+    });
+  }, [startDate, ageGroup, theme]);
 
   const openDay = (index: number) => {
-    const date = addDays(startDate,index);
+    const item = weekDays[index];
+    if (!item) return;
     setDraftFormData({
-      date,
-      dayOfWeek: dayNames[index],
+      date: item.date,
+      dayOfWeek: item.day,
       ageGroup,
-      mainTheme: theme?.mainTheme || '',
-      subTheme: theme?.subTheme || '',
-      developmentDomain: index === 1 ? 'Nhận thức' : index === 2 ? 'Ngôn ngữ' : index === 3 ? 'Thẩm mỹ' : 'Nhận thức',
-      plannedActivity: focusIdeas[index],
-      objectives: goals.slice(index % Math.max(goals.length,1), index % Math.max(goals.length,1)+2).map(g=>g.goal).join('\n'),
+      mainTheme: item.theme.mainTheme,
+      subTheme: item.theme.subTheme,
+      coreContent: item.focus.core,
+      developmentDomain: item.focus.domain,
+      plannedActivity: item.focus.activity,
+      objectives: item.goals.map(g => `${g.code}. ${g.goal}`).join('\n'),
     });
     navigate('daily-plan');
+  };
+
+  const saveWeek = () => {
+    if (!theme || !weekDays.length) return;
+    try {
+      const existing = JSON.parse(localStorage.getItem(WEEKLY_STORAGE_KEY) || '[]') as unknown[];
+      const record = { id: `week-${startDate}`, startDate, ageGroup, mainTheme: theme.mainTheme, subTheme: theme.subTheme, days: weekDays, savedAt: new Date().toISOString() };
+      const next = [record, ...existing.filter((item: any) => item?.id !== record.id)];
+      localStorage.setItem(WEEKLY_STORAGE_KEY, JSON.stringify(next));
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2200);
+    } catch {
+      setSaved(false);
+    }
   };
 
   return (
     <div className="animate-fade-in space-y-6">
       <div>
         <button onClick={() => navigate('home')} className="btn-ghost mb-3 -ml-2"><ArrowLeft className="h-4 w-4" />Trang chủ</button>
-        <div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 text-white shadow-md"><CalendarRange className="h-6 w-6" /></div><div><h1 className="text-xl font-bold text-stone-800 lg:text-2xl">Soạn kế hoạch tuần</h1><p className="text-sm text-stone-500">Bám lịch chủ đề 2026–2027 và cấu trúc tuần mẫu của giáo viên</p></div></div>
+        <div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-600 text-white shadow-md"><CalendarRange className="h-6 w-6" /></div><div><h1 className="text-xl font-bold text-stone-800 lg:text-2xl">Soạn kế hoạch tuần</h1><p className="text-sm text-stone-500">Tạo mạch 5 ngày, rồi mở từng ngày để soạn chi tiết</p></div></div>
       </div>
 
       <section className="card p-5">
         <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div><label className="label-base">Ngày thứ Hai của tuần</label><input type="date" className="input-base" value={startDate} onChange={e=>{setStartDate(e.target.value);setGenerated(false)}} /></div>
+          <div><label className="label-base">Ngày thứ Hai của tuần</label><input type="date" className="input-base" value={startDate} onChange={e=>{setStartDate(e.target.value);setGenerated(false);setSaved(false)}} /></div>
           <button className="btn-primary" onClick={()=>setGenerated(true)}><Sparkles className="h-5 w-5" />Tạo kế hoạch tuần</button>
         </div>
         {ageGroup !== '5-6 tuổi' && <div className="mt-3 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"><AlertTriangle className="h-4 w-4 shrink-0" />Hiện chỉ có bộ mục tiêu và lịch chủ đề chuyên môn cho 5–6 tuổi. Không tự gắn mục tiêu chính thức cho độ tuổi khác.</div>}
@@ -55,26 +146,27 @@ export function WeeklyPlanPage() {
       {generated && theme && (
         <>
           <section className="card p-5">
-            <h2 className="font-bold text-stone-800">KẾ HOẠCH GIÁO DỤC TUẦN</h2>
-            <p className="mt-1 text-sm text-stone-600">Chủ đề: <strong>{theme.subTheme}</strong> · {theme.startDate} – {theme.endDate}</p>
-            <p className="mt-2 text-xs text-stone-500">Cấu trúc tham khảo: {SAMPLE_SOURCE} · Mục tiêu: {GOAL_SOURCE}</p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><h2 className="font-bold text-stone-800">KẾ HOẠCH GIÁO DỤC TUẦN</h2><p className="mt-1 text-sm text-stone-600">Chủ đề: <strong>{theme.subTheme}</strong> · {shortDate(startDate)} – {shortDate(addDays(startDate,4))}</p><p className="mt-2 text-xs text-stone-500">Cấu trúc tham khảo: {SAMPLE_SOURCE} · Mục tiêu: {GOAL_SOURCE}</p></div>
+              <div className="flex gap-2"><button onClick={saveWeek} className="btn-ghost border border-stone-200"><Save className="h-4 w-4" />{saved ? 'Đã lưu' : 'Lưu tuần'}</button><button onClick={()=>window.print()} className="btn-ghost border border-stone-200"><Printer className="h-4 w-4" />In</button></div>
+            </div>
+            {saved && <div className="mt-3 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700"><CheckCircle2 className="h-4 w-4" />Đã lưu kế hoạch tuần trên thiết bị này.</div>}
           </section>
-          <div className="grid gap-4 lg:grid-cols-5">
-            {dayNames.map((day,i)=>(
-              <section key={day} className="card p-4">
-                <h3 className="font-bold text-secondary-700">{day}</h3><p className="text-xs text-stone-400">{addDays(startDate,i)}</p>
-                <div className="mt-3 space-y-3 text-sm">
-                  <div><p className="text-xs font-semibold text-stone-400">Đón trẻ – Trò chuyện</p><p>Gợi kinh nghiệm, câu hỏi và cảm xúc về “{theme.subTheme}”.</p></div>
-                  <div><p className="text-xs font-semibold text-stone-400">Chơi ngoài trời</p><p>{outdoorIdeas[i]}</p></div>
-                  <div><p className="text-xs font-semibold text-stone-400">Hoạt động học</p><p>{focusIdeas[i]}</p></div>
-                  <div><p className="text-xs font-semibold text-stone-400">Hoạt động góc</p><p>Trẻ chọn vai/góc, vận dụng trải nghiệm ngày, mở rộng mạch chơi.</p></div>
-                  <div><p className="text-xs font-semibold text-stone-400">Sinh hoạt chiều</p><p>{afternoonIdeas[i]}</p></div>
-                </div>
-                <button className="mt-4 flex w-full items-center justify-center gap-1 rounded-lg bg-secondary-50 px-3 py-2 text-xs font-semibold text-secondary-700 hover:bg-secondary-100" onClick={()=>openDay(i)}>Soạn chi tiết ngày này <ArrowRight className="h-3.5 w-3.5" /></button>
-              </section>
-            ))}
-          </div>
-          <section className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800">Tuần được tạo theo mạch chung nhưng không ép 5 ngày lặp cùng một hoạt động. Khi mở từng ngày, hệ thống kế thừa ngày, chủ đề và hoạt động dự kiến rồi áp dụng sườn chuyên môn tương ứng.</section>
+
+          <section className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-[1100px] w-full border-collapse text-sm">
+                <thead><tr className="bg-stone-50"><th className="w-40 border-b border-r border-stone-200 p-3 text-left">Thời điểm</th>{weekDays.map(item=><th key={item.day} className="min-w-48 border-b border-r border-stone-200 p-3 text-left"><span className="font-bold text-secondary-700">{item.day}</span><span className="block text-xs font-normal text-stone-400">{shortDate(item.date)}</span></th>)}</tr></thead>
+                <tbody>
+                  {[
+                    ['Đón trẻ – Trò chuyện','reception'],['Thể dục sáng','morningExercise'],['Chơi ngoài trời','outdoor'],['Hoạt động có chủ đích','focus'],['Hoạt động góc','corners'],['Vệ sinh – Ăn – Ngủ','care'],['Hoạt động chiều','afternoon'],['Nêu gương','recognition'],['Trả trẻ','pickup'],
+                  ].map(([label,key])=><tr key={key}><th className="border-b border-r border-stone-200 bg-stone-50/60 p-3 align-top text-left font-semibold text-stone-600">{label}</th>{weekDays.map((item,index)=><td key={`${key}-${item.date}`} className="border-b border-r border-stone-200 p-3 align-top text-stone-700">{key === 'focus' ? <><p className="font-semibold text-stone-800">{item.focus.activity}</p><p className="mt-1 text-xs text-stone-500">{item.focus.core}</p>{item.goals.length > 0 && <p className="mt-2 text-xs text-emerald-700">Mục tiêu: {item.goals.map(g=>g.code).join(', ')}</p>}<button className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-secondary-700" onClick={()=>openDay(index)}>Soạn chi tiết <ArrowRight className="h-3.5 w-3.5" /></button></> : item.dayPlan[key as keyof typeof item.dayPlan]}</td>)}</tr>)}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800"><strong>Liên kết cả tuần:</strong> đầu tuần khơi kinh nghiệm → giữa tuần mở rộng bằng toán/ngôn ngữ/vận động → cuối tuần trẻ vận dụng, kể lại và tự nhận xét. Các thời điểm trong ngày cùng hướng về trải nghiệm chung nhưng không lặp máy móc một đối tượng. Khi bấm <strong>Soạn chi tiết</strong>, ngày – chủ đề – lĩnh vực – hoạt động – mục tiêu được chuyển sang Kế hoạch ngày để giáo viên tiếp tục chỉnh.</section>
         </>
       )}
       {generated && !theme && <div className="card p-6 text-center text-sm text-stone-600">Không tìm thấy tuần này trong lịch chủ đề đã nạp. Hãy chọn tuần thuộc năm học 2026–2027 hoặc nhập chủ đề thủ công ở “Soạn kế hoạch ngày”.</div>}
