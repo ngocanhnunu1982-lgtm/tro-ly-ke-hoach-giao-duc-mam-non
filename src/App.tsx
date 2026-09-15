@@ -8,6 +8,7 @@ import { ActivityLibraryPage } from '@/pages/ActivityLibraryPage';
 import { MyPlansPage } from '@/pages/MyPlansPage';
 import { CheckPlanPage } from '@/pages/CheckPlanPage';
 import { ClassProfilePage } from '@/pages/ClassProfilePage';
+import { ProfessionalDocumentsPage } from '@/pages/ProfessionalDocumentsPage';
 
 function PageRouter() {
   const { currentPage } = useApp();
@@ -29,6 +30,8 @@ function PageRouter() {
       return <CheckPlanPage />;
     case 'class-profile':
       return <ClassProfilePage />;
+    case 'professional-documents':
+      return <ProfessionalDocumentsPage />;
     default:
       return <HomePage />;
   }

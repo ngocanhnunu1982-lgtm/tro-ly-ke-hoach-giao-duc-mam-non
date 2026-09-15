@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Menu,
   X,
+  Database,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -20,6 +21,7 @@ const NAV_ITEMS: { key: PageKey; label: string; icon: typeof Home }[] = [
   { key: 'daily-plan', label: 'Soạn kế hoạch ngày', icon: CalendarDays },
   { key: 'weekly-plan', label: 'Soạn kế hoạch tuần', icon: CalendarRange },
   { key: 'activity-library', label: 'Kho hoạt động', icon: BookOpen },
+  { key: 'professional-documents', label: 'Kho tài liệu chuyên môn', icon: Database },
   { key: 'my-plans', label: 'Kế hoạch của tôi', icon: FolderOpen },
   { key: 'check-plan', label: 'Kiểm tra kế hoạch', icon: Search },
   { key: 'class-profile', label: 'Hồ sơ lớp', icon: Users },

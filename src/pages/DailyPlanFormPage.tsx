@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '@/context/AppContext';
 import type { PlanFormData, AgeGroup, DayOfWeek, PlanLevel } from '@/types';
 import {
@@ -10,6 +10,7 @@ import {
   WEATHER_OPTIONS,
 } from '@/data/constants';
 import { generateObjectives, generatePlan } from '@/utils/planGenerator';
+import { findThemeByDate, suggestGoals, THEME_SOURCE, GOAL_SOURCE } from '@/data/knowledgeBase';
 import {
   CalendarDays,
   ArrowLeft,
@@ -77,11 +78,19 @@ export function DailyPlanFormPage() {
   });
   const [generating, setGenerating] = useState(false);
   const [objectiveLoading, setObjectiveLoading] = useState(false);
+  const themeSuggestion = useMemo(() => findThemeByDate(form.date, form.ageGroup), [form.date, form.ageGroup]);
+  const goalSuggestions = useMemo(() => suggestGoals({ ageGroup: form.ageGroup, developmentDomain: form.developmentDomain, plannedActivity: form.plannedActivity, coreContent: form.coreContent, subTheme: form.subTheme, limit: 6 }), [form.ageGroup, form.developmentDomain, form.plannedActivity, form.coreContent, form.subTheme]);
 
   // Save draft to localStorage (debounced via useEffect)
   useEffect(() => {
     setDraftFormData(form);
   }, [form, setDraftFormData]);
+
+  useEffect(() => {
+    if (themeSuggestion && (!form.mainTheme || !form.subTheme)) {
+      setForm((prev) => ({ ...prev, mainTheme: prev.mainTheme || themeSuggestion.mainTheme, subTheme: prev.subTheme || themeSuggestion.subTheme }));
+    }
+  }, [themeSuggestion, form.mainTheme, form.subTheme]);
 
   const update = <K extends keyof PlanFormData>(key: K, value: PlanFormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -258,6 +267,17 @@ export function DailyPlanFormPage() {
           Chủ đề và nội dung giáo dục
         </h2>
         <div className="space-y-4">
+          {form.ageGroup === '5-6 tuổi' && form.date && themeSuggestion && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm">
+              <p className="font-semibold text-emerald-800">Chủ đề theo kế hoạch năm</p>
+              <p className="mt-1 text-emerald-700"><strong>{themeSuggestion.mainTheme}</strong> → {themeSuggestion.subTheme}</p>
+              <p className="mt-1 text-xs text-emerald-600">{themeSuggestion.startDate} đến {themeSuggestion.endDate} · Nguồn: {THEME_SOURCE}</p>
+              <button type="button" className="mt-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white" onClick={() => setForm((prev) => ({ ...prev, mainTheme: themeSuggestion.mainTheme, subTheme: themeSuggestion.subTheme }))}>Dùng chủ đề này</button>
+            </div>
+          )}
+          {form.ageGroup === '5-6 tuổi' && form.date && !themeSuggestion && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Ngày này chưa có chủ đề trong lịch 2026–2027 đã nạp (có thể là thời gian nghỉ/ôn tập). Giáo viên có thể nhập thủ công.</div>
+          )}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="label-base">Chủ đề lớn</label>
@@ -333,9 +353,34 @@ export function DailyPlanFormPage() {
                 ) : (
                   <Sparkles className="h-3.5 w-3.5" />
                 )}
-                AI gợi ý mục tiêu
+                Gợi ý mục tiêu từ tài liệu
               </button>
             </div>
+            {form.ageGroup !== '5-6 tuổi' && (
+              <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                Chưa có bộ mục tiêu chuyên môn được tải lên cho độ tuổi này. Nội dung gợi ý sẽ được đánh dấu là AI đề xuất – cần giáo viên kiểm tra.
+              </div>
+            )}
+            {form.ageGroup === '5-6 tuổi' && goalSuggestions.length > 0 && (
+              <div className="mb-3 rounded-xl border border-secondary-200 bg-secondary-50 p-3">
+                <p className="mb-2 text-xs font-semibold text-secondary-800">Mục tiêu phù hợp từ {GOAL_SOURCE}</p>
+                <div className="space-y-2">
+                  {goalSuggestions.map((g) => {
+                    const checked = form.objectives.includes(g.goal);
+                    return (
+                      <label key={g.code} className="flex cursor-pointer items-start gap-2 rounded-lg bg-white p-2 text-xs text-stone-700">
+                        <input type="checkbox" className="mt-0.5" checked={checked} onChange={(e) => {
+                          const lines = form.objectives.split('\n').filter(Boolean);
+                          const next = e.target.checked ? [...lines, g.goal] : lines.filter((line) => line !== g.goal);
+                          update('objectives', next.join('\n'));
+                        }} />
+                        <span><strong>{g.code}</strong> · {g.goal.replace(/^.*?\.\s*/, '')}<span className="mt-1 block text-[11px] text-stone-400">{g.domain} · {g.activities}</span></span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <textarea
               className="input-base min-h-[120px] resize-y"
               value={form.objectives}

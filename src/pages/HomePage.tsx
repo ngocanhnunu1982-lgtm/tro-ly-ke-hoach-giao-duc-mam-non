@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Heart,
   TrendingUp,
+  Database,
 } from 'lucide-react';
 
 interface FeatureCard {
@@ -51,6 +52,15 @@ const FEATURES: FeatureCard[] = [
     color: 'text-accent-700',
     bgColor: 'bg-accent-50 hover:bg-accent-100',
     iconColor: 'bg-accent-500',
+  },
+  {
+    key: 'professional-documents',
+    title: 'Kho tài liệu chuyên môn',
+    desc: 'Mục tiêu thí điểm, lịch chủ đề, sườn giáo án và kế hoạch mẫu',
+    icon: Database,
+    color: 'text-indigo-700',
+    bgColor: 'bg-indigo-50 hover:bg-indigo-100',
+    iconColor: 'bg-indigo-600',
   },
   {
     key: 'my-plans',

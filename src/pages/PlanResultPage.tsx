@@ -175,6 +175,20 @@ export function PlanResultPage() {
         </section>
       )}
 
+      <section className="card p-5 lg:p-6">
+        <h2 className="mb-3 text-base font-semibold text-stone-800">Nguồn chuyên môn</h2>
+        <div className="grid gap-2 text-sm sm:grid-cols-2">
+          {currentPlan.themeSource && <div className="rounded-lg bg-emerald-50 p-3 text-emerald-800"><strong>Chủ đề:</strong> {currentPlan.themeSource.documentName}</div>}
+          {currentPlan.objectiveSource && <div className="rounded-lg bg-secondary-50 p-3 text-secondary-800"><strong>Mục tiêu:</strong> {currentPlan.objectiveSource.documentName}<span className="block text-xs opacity-75">{currentPlan.objectiveSource.confidence}</span></div>}
+        </div>
+        {currentPlan.reviewWarnings && currentPlan.reviewWarnings.length > 0 && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <strong>Cần xem lại:</strong>
+            <ul className="mt-1 list-disc pl-5">{currentPlan.reviewWarnings.map((w) => <li key={w}>{w}</li>)}</ul>
+          </div>
+        )}
+      </section>
+
       {/* Activity sections */}
       <div className="space-y-4">
         {sections.map((section, idx) => {
@@ -232,6 +246,11 @@ export function PlanResultPage() {
 
               {/* Section body */}
               <div className="space-y-4 px-5 py-5 lg:px-6">
+                {section.source && (
+                  <div className={`rounded-lg px-3 py-2 text-xs ${section.source.confidence === 'Tài liệu cung cấp' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>
+                    <strong>Nguồn:</strong> {section.source.documentName} · {section.source.label}
+                  </div>
+                )}
                 {/* Time row for mobile */}
                 <div className="flex items-center gap-3 text-xs text-stone-500 sm:hidden">
                   <span className="flex items-center gap-1">
